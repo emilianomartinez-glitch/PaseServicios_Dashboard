@@ -61,10 +61,13 @@ header {
 }
 .header-left { display: flex; align-items: center; gap: 12px; }
 .header-logo {
-  font-family: 'Alexandria', sans-serif; font-weight: 700; font-size: 18px;
-  color: var(--accent); letter-spacing: -0.5px;
+  display: flex; align-items: center; gap: 8px;
 }
-.header-logo span { color: var(--text3); font-weight: 400; font-size: 13px; margin-left: 6px; }
+.header-logo img { height: 22px; width: auto; }
+.header-logo span {
+  font-family: 'Alexandria', sans-serif; font-weight: 400; font-size: 12px;
+  color: var(--text3); letter-spacing: 0.5px; margin-top: 2px;
+}
 .header-badge {
   background: var(--accent); color: var(--dark); font-size: 9px; font-weight: 700;
   padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px;
@@ -111,6 +114,14 @@ header {
 }
 .btn-clear:hover { border-color: var(--danger); color: var(--danger); background: rgba(255,71,87,0.05); }
 
+.btn-export {
+  background: transparent; color: var(--accent); border: 1px solid var(--accent);
+  border-radius: var(--radius-sm); padding: 5px 12px; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer;
+  transition: all 0.2s; align-self: flex-end; margin-bottom: 2px; margin-left: 8px;
+}
+.btn-export:hover { background: rgba(0,170,133,0.1); box-shadow: 0 0 10px rgba(0,170,133,0.2); }
+
 /* ═══════════ KPIs ═══════════ */
 .kpi-grid {
   display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;
@@ -147,6 +158,9 @@ header {
 .kpi-card.c-info::before { background: var(--info); }
 .kpi-card.c-gray .kpi-value { color: var(--gray); }
 .kpi-card.c-gray::before { background: var(--gray); }
+
+.kpi-progress-container { width: 100%; height: 4px; background: var(--bg3); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.kpi-progress-bar { height: 100%; transition: width 0.6s ease; }
 
 /* ═══════════ SECTIONS ═══════════ */
 .section-label {
@@ -250,7 +264,10 @@ table.pipeline tr.detail-row td { padding: 0; background: var(--bg2); }
 .anomaly-card {
   background: var(--card); border: 1px solid var(--border2);
   border-radius: var(--radius); padding: 12px 14px; border-left: 3px solid var(--warn);
+  cursor: pointer; transition: all 0.2s;
 }
+.anomaly-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); background: var(--card-hover); }
+.anomaly-card.active { border: 1px solid var(--accent); border-left: 3px solid var(--accent); background: var(--card-hover); }
 .anomaly-card.a-danger { border-left-color: var(--danger); }
 .anomaly-card.a-info { border-left-color: var(--info); }
 .anomaly-card.a-warn { border-left-color: var(--warn); }
@@ -307,7 +324,10 @@ footer {
   <!-- ═══════════ HEADER ═══════════ -->
   <header>
     <div class="header-left">
-      <div class="header-logo">ENLIGHT<span>SERVICIOS</span></div>
+      <div class="header-logo">
+        <img src="Enlight_Logo.svg" alt="Enlight">
+        <span>SERVICIOS</span>
+      </div>
       <div class="header-badge">Operativo</div>
     </div>
     <div class="header-right">
@@ -339,7 +359,16 @@ footer {
       <label>Tipo</label>
       <select id="fTipo" onchange="applyFilters()"><option value="">Todos</option></select>
     </div>
+    <div class="filter-group">
+      <label>Estatus</label>
+      <select id="fEstatus" onchange="applyFilters()">
+        <option value="">Todos</option>
+        <option value="Activo" selected>Activos</option>
+        <option value="On Hold">On Hold</option>
+      </select>
+    </div>
     <button class="btn-clear" onclick="clearFilters()">Limpiar filtros</button>
+    <button class="btn-export" onclick="exportToCSV()">Exportar CSV</button>
   </div>
 
   <!-- ═══════════ CONTENT (hidden until data loads) ═══════════ -->
@@ -429,14 +458,15 @@ let kpiFilter = null; // 'pipeline' | 'semana' | '2semanas' | 'saturacion' | 'ci
 let expandedRows = new Set();
 let timelineClickFilter = null; // { week, hito } from timeline bar click
 let mapClickFilter = null; // proj from map click
+let anomalyClickFilter = null; // { id, projs: [] }
 
 // ─── HITOS SERVICIOS ─────────────────────────────────────────────
 const HITOS_SERV = [
-  { key: 'Inicio de Instalación',  short: 'Inicio Inst.',   colKey: 'hInicioInst' },
-  { key: 'Commissioning',          short: 'Commissioning',  colKey: 'hCommissioning' },
-  { key: 'Visita Calidad',         short: 'Visita Cal.',    colKey: 'hVisitaCal' },
-  { key: 'Entrega Cliente',        short: 'Entrega Cli.',   colKey: 'hEntregaCli' },
-  { key: 'Pase Servicios',         short: 'Pase Serv.',     colKey: 'hPaseServ' },
+  { key: 'Inicio de Instalación',                short: 'Inicio Inst.',   colKey: 'hInicioInst' },
+  { key: 'Commissioning',                        short: 'Commissioning',  colKey: 'hCommissioning' },
+  { key: 'Visita Calidad a Sitio',               short: 'Visita Cal.',    colKey: 'hVisitaCal' },
+  { key: 'Entrega al Cliente',                   short: 'Entrega Cli.',   colKey: 'hEntregaCli' },
+  { key: 'Pase a Servicios/liberación de sitio', short: 'Pase Serv.',     colKey: 'hPaseServ' },
 ];
 
 // ─── DATE PARSING (DD/MM/YYYY safe) ─────────────────────────────
@@ -484,11 +514,11 @@ async function fetchData() {
     document.getElementById('lastUpdate').textContent =
       'Actualizado: ' + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
     buildFilters();
-    applyFilters();
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
+    applyFilters();
     if (map) {
-      setTimeout(() => map.invalidateSize(), 100);
+      setTimeout(() => map.invalidateSize(), 200);
     }
   } catch (e) {
     console.error('Fetch error:', e);
@@ -611,16 +641,18 @@ function enrichProject(p) {
 // ─── FILTERS ─────────────────────────────────────────────────────
 function buildFilters() {
   if (!rawData?.proyectos) return;
-  const all = rawData.proyectos.filter(isInPipeline);
+  const all = rawData.proyectos.filter(p => isInPipeline(p) || p.estatusAdO === 'On Hold');
   
   const fSitio = document.getElementById('fSitio').value.toLowerCase();
   const fCuenta = document.getElementById('fCuenta').value;
   const fPM = document.getElementById('fPM').value;
   const fEntidad = document.getElementById('fEntidad').value;
   const fTipo = document.getElementById('fTipo').value;
+  const fEstatus = document.getElementById('fEstatus').value;
 
   const fill = (id, vals, currentVal) => {
     const sel = document.getElementById(id);
+    if (!sel) return;
     const opts = [...new Set(vals.filter(Boolean))].sort();
     let html = `<option value="">${id === 'fPM' || id === 'fTipo' ? 'Todos' : 'Todas'}</option>`;
     opts.forEach(v => {
@@ -637,6 +669,7 @@ function buildFilters() {
     if (excludeId !== 'fPM' && fPM) p = p.filter(x => x.pm === fPM);
     if (excludeId !== 'fEntidad' && fEntidad) p = p.filter(x => x.entidadFed === fEntidad);
     if (excludeId !== 'fTipo' && fTipo) p = p.filter(x => x.tipo === fTipo);
+    if (excludeId !== 'fEstatus' && fEstatus) p = p.filter(x => x.estatusAdO === fEstatus);
     return p;
   };
 
@@ -658,8 +691,14 @@ function applyFilters() {
   const fPM = document.getElementById('fPM').value;
   const fEntidad = document.getElementById('fEntidad').value;
   const fTipo = document.getElementById('fTipo').value;
+  const fEstatus = document.getElementById('fEstatus').value;
 
-  let projs = rawData.proyectos.filter(isInPipeline).map(enrichProject);
+  let projs = rawData.proyectos.filter(p => {
+    const isRelevant = isInPipeline(p) || p.estatusAdO === 'On Hold';
+    if (!isRelevant) return false;
+    if (fEstatus) return p.estatusAdO === fEstatus;
+    return true;
+  }).map(enrichProject);
 
   if (fSitio) projs = projs.filter(p => (p.sitio || '').toLowerCase().includes(fSitio) || (p.proj || '').toLowerCase().includes(fSitio));
   if (fCuenta) projs = projs.filter(p => p.cuenta === fCuenta);
@@ -689,6 +728,11 @@ function applyFilters() {
     });
   }
 
+  // Anomaly click filter
+  if (anomalyClickFilter) {
+    projs = projs.filter(p => anomalyClickFilter.projs.includes(p.proj));
+  }
+
   pipelineData = projs;
   buildFilters(); // Actualizar opciones disponibles en los otros filtros
   renderAll();
@@ -700,15 +744,45 @@ function clearFilters() {
   document.getElementById('fPM').value = '';
   document.getElementById('fEntidad').value = '';
   document.getElementById('fTipo').value = '';
+  document.getElementById('fEstatus').value = 'Activo';
   kpiFilter = null;
   mapClickFilter = null;
   timelineClickFilter = null;
+  anomalyClickFilter = null;
   applyFilters();
+}
+
+function exportToCSV() {
+  if (!pipelineData || pipelineData.length === 0) return alert('No hay datos para exportar');
+  
+  const headers = ['PROJ', 'Sitio', 'Cuenta', 'PM', 'Entidad', 'Tipo', 'Estatus', '% Obra', 'Siguiente Hito', 'Fecha Hito'];
+  const rows = pipelineData.map(p => {
+    const nextStr = p.nextHito ? p.nextHito.short : '—';
+    const nextDate = p.nextHito ? new Date(p.nextHito.bestDate).toLocaleDateString('es-MX') : '—';
+    return [
+      p.proj, p.sitio, p.cuenta, p.pm, p.entidadFed, p.tipo, p.estatusAdO,
+      (parseFloat(p.pctObra || 0) * 100).toFixed(0) + '%',
+      nextStr, nextDate
+    ];
+  });
+
+  let csvContent = "data:text/csv;charset=utf-8," 
+    + "\uFEFF" // BOM for Excel
+    + headers.join(",") + "\n" 
+    + rows.map(e => e.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(",")).join("\n");
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Enlight_Servicios_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function toggleKpiFilter(key) {
   kpiFilter = (kpiFilter === key) ? null : key;
-  mapClickFilter = null; timelineClickFilter = null;
+  mapClickFilter = null; timelineClickFilter = null; anomalyClickFilter = null;
   applyFilters();
 }
 
@@ -743,12 +817,13 @@ function renderKPIs() {
   const satCls = satPct <= 60 ? 'c-accent' : satPct <= 100 ? 'c-warn' : 'c-danger';
 
   // Promedio días a Pase Servicios
+  const hNamePase = 'Pase a Servicios/liberación de sitio';
   const conPase = base.filter(p => {
-    const h = p.servHitos.find(s => s.key === 'Pase Servicios');
+    const h = p.servHitos.find(s => s.key === hNamePase);
     return h && h.bestDate && !h.completed;
   });
   const promDias = conPase.length > 0
-    ? Math.round(conPase.reduce((s, p) => s + daysBetween(TODAY, p.servHitos.find(s => s.key === 'Pase Servicios').bestDate), 0) / conPase.length)
+    ? Math.round(conPase.reduce((s, p) => s + daysBetween(TODAY, p.servHitos.find(s => s.key === hNamePase).bestDate), 0) / conPase.length)
     : null;
 
   // Puntos ciegos
@@ -767,14 +842,23 @@ function renderKPIs() {
     { key: 'ciegos', label: 'Puntos ciegos', value: ciegos, sub: '≥80% sin Comm.', cls: ciegos > 0 ? 'c-danger' : 'c-gray' },
   ];
 
-  document.getElementById('kpiGrid').innerHTML = cards.map((c, i) => `
+  document.getElementById('kpiGrid').innerHTML = cards.map((c, i) => {
+    let barHtml = '';
+    if (c.key === 'saturacion') {
+      const barPct = Math.min(100, parseInt(c.value) || 0);
+      const barColor = c.cls === 'c-accent' ? 'var(--accent)' : (c.cls === 'c-warn' ? 'var(--warn)' : 'var(--danger)');
+      barHtml = `<div class="kpi-progress-container"><div class="kpi-progress-bar" style="width:${barPct}%; background:${barColor}"></div></div>`;
+    }
+    return `
     <div class="kpi-card ${c.cls} animate-in${kpiFilter === c.key ? ' active' : ''}"
          style="animation-delay:${i * 0.04}s"
          onclick="toggleKpiFilter('${c.key}')">
       <div class="kpi-label">${c.label}</div>
       <div class="kpi-value">${c.value}</div>
       <div class="kpi-sub">${c.sub}</div>
-    </div>`).join('');
+      ${barHtml}
+    </div>`;
+  }).join('');
 }
 
 // ═══════════ MAP ═══════════
@@ -793,7 +877,28 @@ function renderMap() {
   mapMarkers.forEach(m => map.removeLayer(m));
   mapMarkers = [];
 
-  const projs = pipelineData.filter(p => p.lat && p.lng);
+  // Incluir proyectos Activos y On Hold para visibilidad completa
+  const allForMap = rawData.proyectos.filter(p => isInPipeline(p) || p.estatusAdO === 'On Hold').map(enrichProject);
+  
+  const fSitio = document.getElementById('fSitio').value.toLowerCase();
+  const fCuenta = document.getElementById('fCuenta').value;
+  const fPM = document.getElementById('fPM').value;
+  const fEntidad = document.getElementById('fEntidad').value;
+  const fTipo = document.getElementById('fTipo').value;
+
+  let pool = allForMap;
+  if (fSitio) pool = pool.filter(p => (p.sitio || '').toLowerCase().includes(fSitio) || (p.proj || '').toLowerCase().includes(fSitio));
+  if (fCuenta) pool = pool.filter(p => p.cuenta === fCuenta);
+  if (fPM) pool = pool.filter(p => p.pm === fPM);
+  if (fEntidad) pool = pool.filter(p => p.entidadFed === fEntidad);
+  if (fTipo) pool = pool.filter(p => p.tipo === fTipo);
+  if (anomalyClickFilter) pool = pool.filter(p => anomalyClickFilter.projs.includes(p.proj));
+
+  const projs = pool.filter(p => 
+    p.lat && p.lng && 
+    p.lat > 14 && p.lat < 33 && 
+    p.lng > -118 && p.lng < -86
+  );
   document.getElementById('mapCount').textContent = projs.length + ' sitios';
 
   const alertColors = { red: '#ff4757', yellow: '#f5a623', green: '#00AA85', gray: '#828080' };
@@ -801,9 +906,16 @@ function renderMap() {
   projs.forEach(p => {
     const r = Math.max(5, Math.min(18, (p.potenciaFVNum / 100) * 4 + 4));
     const color = alertColors[p.alertLevel] || '#828080';
+    const isOnHold = p.estatusAdO === 'On Hold';
+    
     const marker = L.circleMarker([p.lat, p.lng], {
-      radius: r, fillColor: color, fillOpacity: 0.7,
-      color: color, weight: 1.5, opacity: 0.9,
+      radius: r, 
+      fillColor: color, 
+      fillOpacity: isOnHold ? 0.2 : 0.7,
+      color: color, 
+      weight: isOnHold ? 1 : 1.5, 
+      opacity: isOnHold ? 0.5 : 0.9,
+      dashArray: isOnHold ? '4, 4' : null
     }).addTo(map);
 
     const nextStr = p.nextHito ? `${p.nextHito.short}: ${fmtShort(p.nextHito.bestDate)}` : 'Sin hito próx.';
@@ -815,6 +927,7 @@ function renderMap() {
         <span class="mp-label">Cuenta</span> ${p.cuenta}<br>
         <span class="mp-label">PM</span> ${p.pm}<br>
         <span class="mp-label">% Obra</span> ${pctStr}<br>
+        <span class="mp-label">Estatus</span> <span style="color:${p.estatusAdO === 'On Hold' ? 'var(--warn)' : 'var(--accent)'}">${p.estatusAdO}</span><br>
         <span class="mp-label">Próx. hito</span> ${nextStr}<br>
         <span class="mp-label">Entidad</span> ${p.entidadFed || '—'}
       </div>
@@ -858,17 +971,26 @@ function renderTimeline() {
   // Relevant hitos for timeline (skip Inicio Instalación — already happened)
   const TL_HITOS = HITOS_SERV.slice(1); // Commissioning, Visita Cal, Entrega, Pase
 
-  // Use full filtered pipeline (not sub-filtered by kpi/map/timeline)
-  const fullPipe = rawData.proyectos.filter(isInPipeline).map(enrichProject);
-  const fCuenta = document.getElementById('fCuenta').value;
-  const fPM = document.getElementById('fPM').value;
-  const fEntidad = document.getElementById('fEntidad').value;
-  const fTipo = document.getElementById('fTipo').value;
-  let base = fullPipe;
-  if (fCuenta) base = base.filter(p => p.cuenta === fCuenta);
-  if (fPM) base = base.filter(p => p.pm === fPM);
-  if (fEntidad) base = base.filter(p => p.entidadFed === fEntidad);
-  if (fTipo) base = base.filter(p => p.tipo === fTipo);
+  const fEstatus = document.getElementById('fEstatus').value;
+
+  // Use a pool that includes On Hold for visibility
+  const base = rawData.proyectos.filter(p => isInPipeline(p) || p.estatusAdO === 'On Hold').map(enrichProject)
+    .filter(p => {
+      // Apply current filters
+      const fSitio = document.getElementById('fSitio').value.toLowerCase();
+      const fCuenta = document.getElementById('fCuenta').value;
+      const fPM = document.getElementById('fPM').value;
+      const fEntidad = document.getElementById('fEntidad').value;
+      const fTipo = document.getElementById('fTipo').value;
+      if (fSitio && !((p.sitio || '').toLowerCase().includes(fSitio) || (p.proj || '').toLowerCase().includes(fSitio))) return false;
+      if (fCuenta && p.cuenta !== fCuenta) return false;
+      if (fPM && p.pm !== fPM) return false;
+      if (fEntidad && p.entidadFed !== fEntidad) return false;
+      if (fTipo && p.tipo !== fTipo) return false;
+      if (fEstatus && p.estatusAdO !== fEstatus) return false;
+      if (anomalyClickFilter && !anomalyClickFilter.projs.includes(p.proj)) return false;
+      return true;
+    });
 
   const hitoColors = {
     'Commissioning': '#00AA85',
@@ -877,25 +999,64 @@ function renderTimeline() {
     'Pase Serv.': '#ff9f43',
   };
 
-  const datasets = TL_HITOS.map(hs => {
-    const data = weeks.map(w => {
-      let count = 0;
-      const projs = [];
-      base.forEach(p => {
+  const datasets = [];
+  TL_HITOS.forEach(hs => {
+    // Dataset for ACTIVE
+    const dataActive = weeks.map(w => {
+      let count = 0; let projs = [];
+      base.filter(p => p.estatusAdO !== 'On Hold').forEach(p => {
         const sh = p.servHitos.find(s => s.key === hs.key);
-        if (!sh || !sh.bestDate || sh.completed) return;
-        const wk = startOfWeek(sh.bestDate).getTime();
-        if (wk === w.ms) { count++; projs.push(p.proj); }
+        if (sh && sh.bestDate && !sh.completed && startOfWeek(sh.bestDate).getTime() === w.ms) {
+          count++; projs.push(p.proj);
+        }
       });
       return { count, projs };
     });
-    return {
+
+    // Dataset for ON HOLD (phantom)
+    const dataOnHold = weeks.map(w => {
+      let count = 0; let projs = [];
+      base.filter(p => p.estatusAdO === 'On Hold').forEach(p => {
+        const sh = p.servHitos.find(s => s.key === hs.key);
+        if (sh && sh.bestDate && !sh.completed && startOfWeek(sh.bestDate).getTime() === w.ms) {
+          count++; projs.push(p.proj + ' (Hold)');
+        }
+      });
+      return { count, projs };
+    });
+
+    datasets.push({
       label: hs.short,
-      data: data.map(d => d.count),
-      backgroundColor: hitoColors[hs.short] || '#828080',
-      borderRadius: 2,
-      _projs: data.map(d => d.projs),
-    };
+      data: dataActive.map(d => d.count),
+      backgroundColor: weeks.map(w => {
+        const isSel = timelineClickFilter && timelineClickFilter.weekMs === w.ms && timelineClickFilter.hito === hs.short;
+        const anySel = !!timelineClickFilter;
+        return isSel ? hitoColors[hs.short] : (anySel ? hitoColors[hs.short] + '66' : hitoColors[hs.short]);
+      }),
+      borderColor: weeks.map(w => (timelineClickFilter && timelineClickFilter.weekMs === w.ms && timelineClickFilter.hito === hs.short) ? '#fff' : 'transparent'),
+      borderWidth: 2,
+      stack: hs.short,
+      _projs: dataActive.map(d => d.projs),
+      hidden: (fEstatus === 'On Hold') 
+    });
+
+    datasets.push({
+      label: hs.short + ' (Hold)',
+      data: dataOnHold.map(d => d.count),
+      backgroundColor: weeks.map(w => {
+        const isSel = timelineClickFilter && timelineClickFilter.weekMs === w.ms && timelineClickFilter.hito === hs.short;
+        const anySel = !!timelineClickFilter;
+        const baseColor = hitoColors[hs.short] + '44';
+        return isSel ? hitoColors[hs.short] + '99' : (anySel ? hitoColors[hs.short] + '22' : baseColor);
+      }),
+      borderColor: weeks.map(w => (timelineClickFilter && timelineClickFilter.weekMs === w.ms && timelineClickFilter.hito === hs.short) ? '#fff' : 'transparent'),
+      borderWidth: 2,
+      borderDash: [2, 2],
+      stack: hs.short,
+      _projs: dataOnHold.map(d => d.projs),
+      hidden: (fEstatus === 'Activo'), 
+      legend: false 
+    });
   });
 
   charts.timeline = new Chart(canvas, {
@@ -907,7 +1068,13 @@ function renderTimeline() {
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 9 }, color: '#a0aab4', padding: 8 } },
+        legend: { 
+          position: 'top', 
+          labels: { 
+            boxWidth: 10, font: { size: 9 }, color: '#a0aab4', padding: 8,
+            filter: (item) => !item.text.includes('(Hold)') // Custom filter for legend
+          } 
+        },
         tooltip: {
           callbacks: {
             afterBody: (items) => {
@@ -924,11 +1091,15 @@ function renderTimeline() {
         x: { stacked: true, grid: { display: false }, ticks: { font: { size: 9 }, color: '#5a6577' } },
         y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 9 }, color: '#5a6577', stepSize: 1 } },
       },
+      onHover: (e, el) => {
+        e.native.target.style.cursor = el[0] ? 'pointer' : 'default';
+      },
       onClick: (e, elems) => {
-        if (!elems.length) { timelineClickFilter = null; kpiFilter = null; mapClickFilter = null; applyFilters(); return; }
+        if (!elems.length) { timelineClickFilter = null; kpiFilter = null; mapClickFilter = null; anomalyClickFilter = null; applyFilters(); return; }
         const dsIdx = elems[0].datasetIndex;
         const idx = elems[0].index;
-        const hito = TL_HITOS[dsIdx].short;
+        // Como tenemos 2 datasets por hito (Active y Hold), dividimos entre 2
+        const hito = TL_HITOS[Math.floor(dsIdx / 2)].short;
         const weekMs = weeks[idx].ms;
         if (timelineClickFilter && timelineClickFilter.weekMs === weekMs && timelineClickFilter.hito === hito) {
           timelineClickFilter = null;
@@ -1094,9 +1265,10 @@ function renderAnomalies() {
   });
   if (invertidos.length) {
     anomalies.push({
-      type: 'a-danger', title: 'Planeación invertida',
+      id: 'inv', type: 'a-danger', title: 'Planeación invertida',
       body: `${invertidos.length} proyecto${invertidos.length > 1 ? 's' : ''} con Visita Calidad programada antes de Commissioning.`,
       projs: invertidos.map(p => p.proj).join(', '),
+      projsList: invertidos.map(p => p.proj)
     });
   }
 
@@ -1108,9 +1280,10 @@ function renderAnomalies() {
   });
   if (sinVis.length) {
     anomalies.push({
-      type: 'a-warn', title: 'Avance sin visibilidad',
+      id: 'svis', type: 'a-warn', title: 'Avance sin visibilidad',
       body: `${sinVis.length} proyecto${sinVis.length > 1 ? 's' : ''} con ≥80% obra pero sin Commissioning cumplido.`,
       projs: sinVis.map(p => p.proj).join(', '),
+      projsList: sinVis.map(p => p.proj)
     });
   }
 
@@ -1131,9 +1304,10 @@ function renderAnomalies() {
     const [ent, wk] = key.split('|');
     const unique = [...new Set(ps)];
     anomalies.push({
-      type: 'a-info', title: `Cluster: ${ent}`,
+      id: 'cls-' + key, type: 'a-info', title: `Cluster: ${ent}`,
       body: `${unique.length} proyectos con hitos en la semana del ${fmtShort(wk)}. Oportunidad de coordinar visita.`,
       projs: unique.join(', '),
+      projsList: unique
     });
   });
 
@@ -1145,9 +1319,10 @@ function renderAnomalies() {
   });
   if (onHold.length) {
     anomalies.push({
-      type: 'a-warn', title: 'Reactivaciones potenciales',
+      id: 'ohp', type: 'a-warn', title: 'Reactivaciones potenciales',
       body: `${onHold.length} proyecto${onHold.length > 1 ? 's' : ''} On Hold con Inicio Instalación programado. Si se reactivan, entrarán al pipeline.`,
       projs: onHold.map(p => p.proj).join(', '),
+      projsList: onHold.map(p => p.proj)
     });
   }
 
@@ -1157,11 +1332,22 @@ function renderAnomalies() {
   }
 
   grid.innerHTML = anomalies.map(a => `
-    <div class="anomaly-card ${a.type} animate-in">
+    <div class="anomaly-card ${a.type} animate-in${anomalyClickFilter?.id === a.id ? ' active' : ''}" 
+         onclick="toggleAnomalyFilter('${a.id}', '${a.projsList.join(',')}')">
       <div class="anomaly-title">${a.title}</div>
       <div class="anomaly-body">${a.body}</div>
       <div class="anomaly-projs">${a.projs}</div>
     </div>`).join('');
+}
+
+function toggleAnomalyFilter(id, projsStr) {
+  if (anomalyClickFilter && anomalyClickFilter.id === id) {
+    anomalyClickFilter = null;
+  } else {
+    anomalyClickFilter = { id, projs: projsStr.split(',') };
+    kpiFilter = null; mapClickFilter = null; timelineClickFilter = null;
+  }
+  applyFilters();
 }
 
 // ─── INIT ────────────────────────────────────────────────────────
