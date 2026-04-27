@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enlight · Servicios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+/* ═══════════ VARIABLES ═══════════ */
+:root {
+  --bg: #0e1520;
+  --bg2: #151d2b;
+  --bg3: #1a2436;
+  --card: #1a2436;
+  --card-hover: #1f2b40;
+  --border: rgba(0,170,133,0.12);
+  --border2: rgba(255,255,255,0.06);
+  --text: #e8ecf0;
+  --text2: #a0aab4;
+  --text3: #5a6577;
+  --accent: #00AA85;
+  --accent2: #3D7D80;
+  --teal: #293C47;
+  --dark: #121926;
+  --gray: #828080;
+  --warn: #f5a623;
+  --danger: #ff4757;
+  --info: #4c9fff;
+  --phase-comercial: #828080;
+  --phase-ingenieria: #3D7D80;
+  --phase-proveeduria: #4c9fff;
+  --phase-instalacion: #00AA85;
+  --phase-liberacion: #9f7aff;
+  --phase-cierre: #ff9f43;
+  --radius: 8px;
+  --radius-sm: 5px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 14px; }
+body {
+  font-family: 'Roboto', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════ LAYOUT ═══════════ */
+.app { max-width: 1440px; margin: 0 auto; padding: 12px 16px 40px; }
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0 16px; border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-logo {
+  font-family: 'Alexandria', sans-serif; font-weight: 700; font-size: 18px;
+  color: var(--accent); letter-spacing: -0.5px;
+}
+.header-logo span { color: var(--text3); font-weight: 400; font-size: 13px; margin-left: 6px; }
+.header-badge {
+  background: var(--accent); color: var(--dark); font-size: 9px; font-weight: 700;
+  padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.header-right { display: flex; align-items: center; gap: 12px; }
+.header-ts { font-size: 10px; color: var(--text3); }
+.refresh-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ═══════════ FILTERS ═══════════ */
+.filter-bar {
+  display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0 14px;
+  border-bottom: 1px solid var(--border2); margin-bottom: 14px;
+}
+.filter-group { position: relative; }
+.filter-group label {
+  font-size: 9px; color: var(--text3); text-transform: uppercase;
+  letter-spacing: 0.5px; display: block; margin-bottom: 3px;
+}
+.filter-group select, .filter-group input {
+  background: var(--bg2); color: var(--text2); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 5px 8px; font-size: 11px;
+  font-family: 'Roboto', sans-serif; transition: border-color 0.2s;
+}
+.filter-group select {
+  padding-right: 24px; cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a6577'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+  min-width: 120px;
+}
+.filter-group input {
+  width: 160px; outline: none;
+}
+.filter-group select:focus, .filter-group input:focus { outline: none; border-color: var(--accent); }
+
+.btn-clear {
+  background: transparent; color: var(--text3); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 5px 12px; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer;
+  transition: all 0.2s; align-self: flex-end; margin-bottom: 2px;
+}
+.btn-clear:hover { border-color: var(--danger); color: var(--danger); background: rgba(255,71,87,0.05); }
+
+/* ═══════════ KPIs ═══════════ */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;
+  margin-bottom: 16px;
+}
+.kpi-card {
+  background: var(--card); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 14px 12px; cursor: pointer;
+  transition: all 0.2s; position: relative; overflow: hidden;
+}
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--text3); transition: background 0.2s;
+}
+.kpi-card:hover { background: var(--card-hover); transform: translateY(-1px); }
+.kpi-card.active { border-color: var(--accent); }
+.kpi-card.active::before { background: var(--accent); }
+.kpi-card .kpi-value {
+  font-family: 'Alexandria', sans-serif; font-size: 28px; font-weight: 700;
+  line-height: 1.1; margin: 4px 0 2px;
+}
+.kpi-card .kpi-label {
+  font-size: 10px; color: var(--text3); text-transform: uppercase;
+  letter-spacing: 0.3px; font-weight: 500;
+}
+.kpi-card .kpi-sub { font-size: 10px; color: var(--text3); margin-top: 2px; }
+.kpi-card.c-accent .kpi-value { color: var(--accent); }
+.kpi-card.c-accent::before { background: var(--accent); }
+.kpi-card.c-warn .kpi-value { color: var(--warn); }
+.kpi-card.c-warn::before { background: var(--warn); }
+.kpi-card.c-danger .kpi-value { color: var(--danger); }
+.kpi-card.c-danger::before { background: var(--danger); }
+.kpi-card.c-info .kpi-value { color: var(--info); }
+.kpi-card.c-info::before { background: var(--info); }
+.kpi-card.c-gray .kpi-value { color: var(--gray); }
+.kpi-card.c-gray::before { background: var(--gray); }
+
+/* ═══════════ SECTIONS ═══════════ */
+.section-label {
+  font-family: 'Alexandria', sans-serif; font-size: 12px; font-weight: 600;
+  color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.section-label::after {
+  content: ''; flex: 1; height: 1px; background: var(--border2);
+}
+
+.dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.full-width { grid-column: 1 / -1; }
+
+.card {
+  background: var(--card); border: 1px solid var(--border2);
+  border-radius: var(--radius); overflow: hidden;
+}
+.card-header {
+  padding: 10px 14px; border-bottom: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-title {
+  font-family: 'Alexandria', sans-serif; font-size: 11px; font-weight: 600;
+  color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px;
+}
+.card-body { padding: 14px; }
+
+/* ═══════════ MAP ═══════════ */
+#mapContainer {
+  height: 380px; border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--bg);
+}
+.leaflet-container { background: var(--bg) !important; }
+/* .leaflet-tile-pane { filter: brightness(0.7) saturate(0.3) hue-rotate(180deg) invert(1); } */
+.map-popup { font-family: 'Roboto', sans-serif; font-size: 11px; line-height: 1.5; }
+.map-popup strong { color: var(--accent); }
+.map-popup .mp-label { color: var(--text3); font-size: 9px; text-transform: uppercase; }
+.leaflet-popup-content-wrapper {
+  background: var(--card) !important; color: var(--text) !important;
+  border: 1px solid var(--border) !important; border-radius: var(--radius) !important;
+  box-shadow: var(--shadow) !important;
+}
+.leaflet-popup-tip { background: var(--card) !important; }
+
+/* ═══════════ TIMELINE ═══════════ */
+.chart-wrap { position: relative; height: 280px; }
+
+/* ═══════════ TABLE ═══════════ */
+.table-scroll { overflow-x: auto; max-height: 500px; overflow-y: auto; }
+table.pipeline {
+  width: 100%; border-collapse: collapse; font-size: 11px;
+}
+table.pipeline th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--bg2); color: var(--text3); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.3px; font-size: 9px;
+  padding: 8px 6px; text-align: left; cursor: pointer;
+  border-bottom: 1px solid var(--border2); white-space: nowrap;
+  user-select: none;
+}
+table.pipeline th:hover { color: var(--accent); }
+table.pipeline th.sorted { color: var(--accent); }
+table.pipeline td {
+  padding: 7px 6px; border-bottom: 1px solid var(--border2);
+  white-space: nowrap; vertical-align: middle;
+}
+table.pipeline tr:hover td { background: rgba(0,170,133,0.04); }
+table.pipeline tr.expandable { cursor: pointer; }
+table.pipeline tr.detail-row td { padding: 0; background: var(--bg2); }
+.detail-inner {
+  padding: 10px 14px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+}
+.detail-hito {
+  background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  padding: 8px 10px; font-size: 10px;
+}
+.detail-hito .dh-name { font-weight: 600; color: var(--text2); margin-bottom: 4px; }
+.detail-hito .dh-date { color: var(--text); }
+.detail-hito .dh-status { margin-top: 3px; font-size: 9px; }
+
+/* Badges */
+.badge {
+  display: inline-block; padding: 2px 7px; border-radius: 10px;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.3px;
+}
+.badge-red { background: rgba(255,71,87,0.15); color: #ff6b7a; }
+.badge-yellow { background: rgba(245,166,35,0.15); color: #f5c542; }
+.badge-green { background: rgba(0,170,133,0.15); color: #00d4a4; }
+.badge-gray { background: rgba(130,128,128,0.15); color: #999; }
+.badge-blue { background: rgba(76,159,255,0.15); color: #6db3ff; }
+
+.pct-bar {
+  width: 50px; height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden;
+  display: inline-block; vertical-align: middle; margin-left: 4px;
+}
+.pct-bar-fill { height: 100%; border-radius: 3px; }
+
+/* ═══════════ ANOMALIES ═══════════ */
+.anomaly-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
+.anomaly-card {
+  background: var(--card); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 12px 14px; border-left: 3px solid var(--warn);
+}
+.anomaly-card.a-danger { border-left-color: var(--danger); }
+.anomaly-card.a-info { border-left-color: var(--info); }
+.anomaly-card.a-warn { border-left-color: var(--warn); }
+.anomaly-title {
+  font-family: 'Alexandria', sans-serif; font-size: 11px; font-weight: 600;
+  color: var(--text); margin-bottom: 4px;
+}
+.anomaly-body { font-size: 10px; color: var(--text2); line-height: 1.5; }
+.anomaly-projs { font-size: 10px; color: var(--text3); margin-top: 4px; }
+
+/* ═══════════ LOADING ═══════════ */
+.loading-overlay {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px; color: var(--text3);
+}
+.spinner {
+  width: 28px; height: 28px; border: 2px solid var(--border2);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin-bottom: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════════ FOOTER ═══════════ */
+footer {
+  text-align: center; padding: 20px 0 8px; font-size: 9px;
+  color: var(--text3); border-top: 1px solid var(--border2); margin-top: 20px;
+}
+
+/* ═══════════ RESPONSIVE ═══════════ */
+@media (max-width: 900px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .dual-grid { grid-template-columns: 1fr; }
+  .detail-inner { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .filter-bar { flex-direction: column; }
+}
+
+/* ═══════════ ANIMATIONS ═══════════ */
+.animate-in {
+  opacity: 0; transform: translateY(8px);
+  animation: fadeUp 0.35s ease forwards;
+}
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+/* Table count */
+.tbl-count { font-size: 10px; color: var(--text3); font-weight: 400; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══════════ HEADER ═══════════ -->
+  <header>
+    <div class="header-left">
+      <div class="header-logo">ENLIGHT<span>SERVICIOS</span></div>
+      <div class="header-badge">Operativo</div>
+    </div>
+    <div class="header-right">
+      <div class="header-ts" id="lastUpdate">Cargando…</div>
+      <div class="refresh-dot" id="refreshDot"></div>
+    </div>
+  </header>
+
+  <!-- ═══════════ FILTERS ═══════════ -->
+  <div class="filter-bar" id="filterBar">
+    <div class="filter-group">
+      <label>Sitio</label>
+      <input type="text" id="fSitio" list="sitioOptions" placeholder="Buscar sitio..." oninput="applyFilters()">
+      <datalist id="sitioOptions"></datalist>
+    </div>
+    <div class="filter-group">
+      <label>Cuenta</label>
+      <select id="fCuenta" onchange="applyFilters()"><option value="">Todas</option></select>
+    </div>
+    <div class="filter-group">
+      <label>PM</label>
+      <select id="fPM" onchange="applyFilters()"><option value="">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Entidad</label>
+      <select id="fEntidad" onchange="applyFilters()"><option value="">Todas</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Tipo</label>
+      <select id="fTipo" onchange="applyFilters()"><option value="">Todos</option></select>
+    </div>
+    <button class="btn-clear" onclick="clearFilters()">Limpiar filtros</button>
+  </div>
+
+  <!-- ═══════════ CONTENT (hidden until data loads) ═══════════ -->
+  <div id="mainContent" style="display:none;">
+
+    <!-- Section 1: KPIs -->
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <!-- Section 2: Map + Timeline -->
+    <div class="section-label">Visibilidad geográfica y carga semanal</div>
+    <div class="dual-grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Mapa de proyectos en pipeline</div>
+          <div style="font-size:9px;color:var(--text3);" id="mapCount">0 sitios</div>
+        </div>
+        <div id="mapContainer"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Carga semanal — próximas 12 semanas</div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Pipeline table -->
+    <div class="section-label" style="margin-top:6px;">Pipeline operativo <span class="tbl-count" id="pipelineCount"></span></div>
+    <div class="card full-width">
+      <div class="table-scroll">
+        <table class="pipeline" id="pipelineTable">
+          <thead><tr>
+            <th data-sort="proj">PROJ</th>
+            <th data-sort="sitio">Sitio</th>
+            <th data-sort="cuenta">Cuenta</th>
+            <th data-sort="pm">PM</th>
+            <th data-sort="pctObra">% Obra</th>
+            <th data-sort="hInicioInst">Inicio Inst.</th>
+            <th data-sort="hCommissioning">Commissioning</th>
+            <th data-sort="hVisitaCal">Visita Cal.</th>
+            <th data-sort="hEntregaCli">Entrega Cli.</th>
+            <th data-sort="hPaseServ">Pase Serv.</th>
+            <th data-sort="diasProxHito">Días próx.</th>
+            <th>Alerta</th>
+          </tr></thead>
+          <tbody id="pipelineBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section 5: Anomalies -->
+    <div class="section-label" style="margin-top:16px;">Anomalías y cuellos de botella</div>
+    <div class="anomaly-grid" id="anomalyGrid"></div>
+
+  </div>
+
+  <!-- Loading state -->
+  <div class="loading-overlay" id="loadingState">
+    <div class="spinner"></div>
+    <div style="font-size:11px;">Conectando con n8n…</div>
+  </div>
+
+  <footer>
+    ENLIGHT · DASHBOARD SERVICIOS · OPERATIVO
+  </footer>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// ENLIGHT SERVICIOS — Dashboard Operativo
+// ═══════════════════════════════════════════════════════════════════
+
+const API_URL = 'https://egenlight.app.n8n.cloud/webhook/enlight-dashboard';
+const REFRESH_MS = 15 * 60 * 1000;
+const CAPACITY = 5; // max simultaneous projects for Servicios team
+
+// ─── STATE ───────────────────────────────────────────────────────
+let rawData = null;
+let pipelineData = []; // filtered pipeline-eligible projects
+let charts = {};
+let map = null;
+let mapMarkers = [];
+let sortState = { col: 'diasProxHito', asc: true };
+let kpiFilter = null; // 'pipeline' | 'semana' | '2semanas' | 'saturacion' | 'ciegos' | null
+let expandedRows = new Set();
+let timelineClickFilter = null; // { week, hito } from timeline bar click
+let mapClickFilter = null; // proj from map click
+
+// ─── HITOS SERVICIOS ─────────────────────────────────────────────
+const HITOS_SERV = [
+  { key: 'Inicio de Instalación',  short: 'Inicio Inst.',   colKey: 'hInicioInst' },
+  { key: 'Commissioning',          short: 'Commissioning',  colKey: 'hCommissioning' },
+  { key: 'Visita Calidad',         short: 'Visita Cal.',    colKey: 'hVisitaCal' },
+  { key: 'Entrega Cliente',        short: 'Entrega Cli.',   colKey: 'hEntregaCli' },
+  { key: 'Pase Servicios',         short: 'Pase Serv.',     colKey: 'hPaseServ' },
+];
+
+// ─── DATE PARSING (DD/MM/YYYY safe) ─────────────────────────────
+function parseD(val) {
+  if (!val) return null;
+  const s = String(val).trim();
+  // ISO: YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  // DD/MM/YYYY
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) {
+    const d = new Date(+m[3], +m[2] - 1, +m[1]);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+function fmtShort(d) {
+  if (!d) return '—';
+  if (typeof d === 'string') d = parseD(d);
+  if (!d) return '—';
+  return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: '2-digit' });
+}
+function daysBetween(a, b) {
+  return Math.round((b - a) / 86400000);
+}
+function startOfWeek(d) {
+  const r = new Date(d);
+  r.setDate(r.getDate() - r.getDay() + 1); // Monday
+  r.setHours(0,0,0,0);
+  return r;
+}
+
+const TODAY = new Date();
+TODAY.setHours(0,0,0,0);
+
+// ─── DATA FETCH ──────────────────────────────────────────────────
+async function fetchData() {
+  try {
+    const resp = await fetch(API_URL);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    rawData = await resp.json();
+    document.getElementById('lastUpdate').textContent =
+      'Actualizado: ' + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    buildFilters();
+    applyFilters();
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    if (map) {
+      setTimeout(() => map.invalidateSize(), 100);
+    }
+  } catch (e) {
+    console.error('Fetch error:', e);
+    document.getElementById('loadingState').innerHTML =
+      `<div style="color:var(--danger);font-size:12px;">Error: ${e.message}<br><span style="color:var(--text3);font-size:10px;">Reintentando en 30s…</span></div>`;
+    setTimeout(fetchData, 30000);
+  }
+}
+
+// ─── PIPELINE ELIGIBILITY ────────────────────────────────────────
+// A project enters the Servicios pipeline when:
+// - estatusAdO === 'Activo'
+// - Inicio de Instalación has a date (any cascade level) OR
+//   pctObra / pctProyecto indicate installation phase
+// - Pase Servicios NOT yet completed (estatus !== 'Cumplido a tiempo' && !== 'Cumplido con retraso')
+function isInPipeline(p) {
+  if (p.estatusAdO !== 'Activo') return false;
+  const hInicio = getHito(p, 'Inicio de Instalación');
+  const hPase = getHito(p, 'Pase Servicios');
+  // Pase Servicios already done → out of pipeline
+  if (hPase && (hPase.estatus === 'Cumplido a tiempo' || hPase.estatus === 'Cumplido con retraso')) return false;
+  // Has Inicio Instalación date
+  const hasFechaInicio = !!(hInicio && getBestDate(hInicio));
+  if (hasFechaInicio) return true;
+  // Fallback: pctObra exists and > 0
+  const pctO = parseFloat(p.pctObra);
+  if (!isNaN(pctO) && pctO > 0.01) return true;
+  // Fallback: pctProyecto heuristic (SFV >0.46, SAE >0.62)
+  const pctP = parseFloat(p.pctProyecto);
+  if (!isNaN(pctP)) {
+    const tech = (p.tecnologia || '').toLowerCase();
+    const threshold = (tech.includes('sae') || tech.includes('almacenamiento') || tech.includes('bess')) ? 0.62 : 0.46;
+    if (pctP > threshold) return true;
+  }
+  return false;
+}
+
+function getHito(p, nombre) {
+  if (!p.hitos) return null;
+  return p.hitos.find(h => h.nombre === nombre) || null;
+}
+
+// Best date from cascade: fechaModificada → fechaTentativa → fechaPlan
+function getBestDate(h) {
+  if (!h) return null;
+  // For completed hitos, fechaModificada IS the real date
+  const fm = parseD(h.fechaModificada);
+  if (fm) return fm;
+  const ft = parseD(h.fechaTentativa);
+  if (ft) return ft;
+  const fp = parseD(h.fechaPlan);
+  if (fp) return fp;
+  return null;
+}
+
+// Is hito completed?
+function isHitoCompleted(h) {
+  return h && (h.estatus === 'Cumplido a tiempo' || h.estatus === 'Cumplido con retraso');
+}
+
+// ─── ENRICH PROJECT FOR SERVICIOS ────────────────────────────────
+function enrichProject(p) {
+  const servHitos = HITOS_SERV.map(hs => {
+    const h = getHito(p, hs.key);
+    const best = getBestDate(h);
+    // fechaReal contamination: if best > today and not completed, treat as pendiente
+    let effectiveDate = best;
+    if (best && best > TODAY && h && !isHitoCompleted(h)) {
+      // It's a projection, still valid as "best estimate"
+    }
+    return {
+      ...hs,
+      hito: h,
+      bestDate: effectiveDate,
+      completed: h ? isHitoCompleted(h) : false,
+      estatus: h ? h.estatus : null,
+    };
+  });
+
+  // Next pending hito (first non-completed with a date)
+  let nextHito = null;
+  let diasProxHito = Infinity;
+  for (const sh of servHitos) {
+    if (sh.completed) continue;
+    if (sh.bestDate) {
+      const d = daysBetween(TODAY, sh.bestDate);
+      if (d < diasProxHito) {
+        diasProxHito = d;
+        nextHito = sh;
+      }
+    }
+  }
+
+  // Alert level
+  let alertLevel = 'gray'; // >30 days or no date
+  const pctO = parseFloat(p.pctObra);
+  const pctOVal = isNaN(pctO) ? null : pctO;
+  const visitaCal = servHitos.find(s => s.key === 'Visita Calidad');
+
+  if (diasProxHito <= 7 || (pctOVal !== null && pctOVal >= 0.95 && visitaCal && !visitaCal.completed)) {
+    alertLevel = 'red';
+  } else if (diasProxHito <= 14 || (pctOVal !== null && pctOVal >= 0.80)) {
+    alertLevel = 'yellow';
+  } else if (diasProxHito <= 30) {
+    alertLevel = 'green';
+  }
+
+  return {
+    ...p,
+    servHitos,
+    nextHito,
+    diasProxHito: diasProxHito === Infinity ? null : diasProxHito,
+    alertLevel,
+    lat: parseFloat(p.lat || p.Latitud) || null,
+    lng: parseFloat(p.lng || p.Longitud) || null,
+    potenciaFVNum: parseFloat(p.potenciaFV) || 100,
+  };
+}
+
+// ─── FILTERS ─────────────────────────────────────────────────────
+function buildFilters() {
+  if (!rawData?.proyectos) return;
+  const all = rawData.proyectos.filter(isInPipeline);
+  
+  const fSitio = document.getElementById('fSitio').value.toLowerCase();
+  const fCuenta = document.getElementById('fCuenta').value;
+  const fPM = document.getElementById('fPM').value;
+  const fEntidad = document.getElementById('fEntidad').value;
+  const fTipo = document.getElementById('fTipo').value;
+
+  const fill = (id, vals, currentVal) => {
+    const sel = document.getElementById(id);
+    const opts = [...new Set(vals.filter(Boolean))].sort();
+    let html = `<option value="">${id === 'fPM' || id === 'fTipo' ? 'Todos' : 'Todas'}</option>`;
+    opts.forEach(v => {
+      html += `<option value="${v}"${v === currentVal ? ' selected' : ''}>${v}</option>`;
+    });
+    sel.innerHTML = html;
+  };
+
+  // Para cada filtro, calculamos opciones basadas en los DEMÁS filtros
+  const getPool = (excludeId) => {
+    let p = all;
+    if (excludeId !== 'fSitio' && fSitio) p = p.filter(x => (x.sitio || '').toLowerCase().includes(fSitio) || (x.proj || '').toLowerCase().includes(fSitio));
+    if (excludeId !== 'fCuenta' && fCuenta) p = p.filter(x => x.cuenta === fCuenta);
+    if (excludeId !== 'fPM' && fPM) p = p.filter(x => x.pm === fPM);
+    if (excludeId !== 'fEntidad' && fEntidad) p = p.filter(x => x.entidadFed === fEntidad);
+    if (excludeId !== 'fTipo' && fTipo) p = p.filter(x => x.tipo === fTipo);
+    return p;
+  };
+
+  fill('fCuenta', getPool('fCuenta').map(p => p.cuenta), fCuenta);
+  fill('fPM', getPool('fPM').map(p => p.pm), fPM);
+  fill('fEntidad', getPool('fEntidad').map(p => p.entidadFed), fEntidad);
+  fill('fTipo', getPool('fTipo').map(p => p.tipo), fTipo);
+
+  // Sitio Autocomplete (datalist)
+  const dl = document.getElementById('sitioOptions');
+  const sites = [...new Set(getPool('fSitio').map(p => p.sitio).filter(Boolean))].sort();
+  dl.innerHTML = sites.map(s => `<option value="${s}">`).join('');
+}
+
+function applyFilters() {
+  if (!rawData?.proyectos) return;
+  const fSitio = document.getElementById('fSitio').value.toLowerCase();
+  const fCuenta = document.getElementById('fCuenta').value;
+  const fPM = document.getElementById('fPM').value;
+  const fEntidad = document.getElementById('fEntidad').value;
+  const fTipo = document.getElementById('fTipo').value;
+
+  let projs = rawData.proyectos.filter(isInPipeline).map(enrichProject);
+
+  if (fSitio) projs = projs.filter(p => (p.sitio || '').toLowerCase().includes(fSitio) || (p.proj || '').toLowerCase().includes(fSitio));
+  if (fCuenta) projs = projs.filter(p => p.cuenta === fCuenta);
+  if (fPM) projs = projs.filter(p => p.pm === fPM);
+  if (fEntidad) projs = projs.filter(p => p.entidadFed === fEntidad);
+  if (fTipo) projs = projs.filter(p => p.tipo === fTipo);
+
+  // KPI sub-filter
+  if (kpiFilter === 'semana') projs = projs.filter(p => p.diasProxHito !== null && p.diasProxHito <= 7);
+  else if (kpiFilter === '2semanas') projs = projs.filter(p => p.diasProxHito !== null && p.diasProxHito > 7 && p.diasProxHito <= 14);
+  else if (kpiFilter === 'ciegos') projs = projs.filter(p => {
+    const pctO = parseFloat(p.pctObra); const has = !isNaN(pctO) && pctO >= 0.80;
+    const commDone = p.servHitos.find(s => s.key === 'Commissioning')?.completed;
+    return has && !commDone;
+  });
+
+  // Map click filter
+  if (mapClickFilter) projs = projs.filter(p => p.proj === mapClickFilter);
+
+  // Timeline click filter
+  if (timelineClickFilter) {
+    projs = projs.filter(p => {
+      const sh = p.servHitos.find(s => s.short === timelineClickFilter.hito);
+      if (!sh || !sh.bestDate || sh.completed) return false;
+      const w = startOfWeek(sh.bestDate).getTime();
+      return w === timelineClickFilter.weekMs;
+    });
+  }
+
+  pipelineData = projs;
+  buildFilters(); // Actualizar opciones disponibles en los otros filtros
+  renderAll();
+}
+
+function clearFilters() {
+  document.getElementById('fSitio').value = '';
+  document.getElementById('fCuenta').value = '';
+  document.getElementById('fPM').value = '';
+  document.getElementById('fEntidad').value = '';
+  document.getElementById('fTipo').value = '';
+  kpiFilter = null;
+  mapClickFilter = null;
+  timelineClickFilter = null;
+  applyFilters();
+}
+
+function toggleKpiFilter(key) {
+  kpiFilter = (kpiFilter === key) ? null : key;
+  mapClickFilter = null; timelineClickFilter = null;
+  applyFilters();
+}
+
+// ─── RENDER ALL ──────────────────────────────────────────────────
+function renderAll() {
+  renderKPIs();
+  renderMap();
+  renderTimeline();
+  renderPipelineTable();
+  renderAnomalies();
+}
+
+// ═══════════ KPIs ═══════════
+function renderKPIs() {
+  // Compute from full pipeline (before sub-filters)
+  const all = rawData.proyectos.filter(isInPipeline).map(enrichProject);
+  const fCuenta = document.getElementById('fCuenta').value;
+  const fPM = document.getElementById('fPM').value;
+  const fEntidad = document.getElementById('fEntidad').value;
+  const fTipo = document.getElementById('fTipo').value;
+  let base = all;
+  if (fCuenta) base = base.filter(p => p.cuenta === fCuenta);
+  if (fPM) base = base.filter(p => p.pm === fPM);
+  if (fEntidad) base = base.filter(p => p.entidadFed === fEntidad);
+  if (fTipo) base = base.filter(p => p.tipo === fTipo);
+
+  const total = base.length;
+  const semana = base.filter(p => p.diasProxHito !== null && p.diasProxHito <= 7).length;
+  const dos_semanas = base.filter(p => p.diasProxHito !== null && p.diasProxHito > 7 && p.diasProxHito <= 14).length;
+  const saturacion = total / CAPACITY;
+  const satPct = Math.round(saturacion * 100);
+  const satCls = satPct <= 60 ? 'c-accent' : satPct <= 100 ? 'c-warn' : 'c-danger';
+
+  // Promedio días a Pase Servicios
+  const conPase = base.filter(p => {
+    const h = p.servHitos.find(s => s.key === 'Pase Servicios');
+    return h && h.bestDate && !h.completed;
+  });
+  const promDias = conPase.length > 0
+    ? Math.round(conPase.reduce((s, p) => s + daysBetween(TODAY, p.servHitos.find(s => s.key === 'Pase Servicios').bestDate), 0) / conPase.length)
+    : null;
+
+  // Puntos ciegos
+  const ciegos = base.filter(p => {
+    const pctO = parseFloat(p.pctObra); const has = !isNaN(pctO) && pctO >= 0.80;
+    const commDone = p.servHitos.find(s => s.key === 'Commissioning')?.completed;
+    return has && !commDone;
+  }).length;
+
+  const cards = [
+    { key: 'pipeline', label: 'En pipeline', value: total, sub: 'proyectos activos', cls: 'c-accent' },
+    { key: 'semana', label: 'Atención esta semana', value: semana, sub: 'hito en ≤7 días', cls: semana > 0 ? 'c-danger' : 'c-accent' },
+    { key: '2semanas', label: 'Próximas 2 sem.', value: dos_semanas, sub: 'hito en 8-14 días', cls: dos_semanas > 0 ? 'c-warn' : 'c-accent' },
+    { key: 'saturacion', label: 'Saturación', value: satPct + '%', sub: `${total}/${CAPACITY} capacidad`, cls: satCls },
+    { key: 'promedio', label: 'Prom. días a Pase', value: promDias !== null ? promDias + 'd' : '—', sub: conPase.length + ' proyectos', cls: 'c-info' },
+    { key: 'ciegos', label: 'Puntos ciegos', value: ciegos, sub: '≥80% sin Comm.', cls: ciegos > 0 ? 'c-danger' : 'c-gray' },
+  ];
+
+  document.getElementById('kpiGrid').innerHTML = cards.map((c, i) => `
+    <div class="kpi-card ${c.cls} animate-in${kpiFilter === c.key ? ' active' : ''}"
+         style="animation-delay:${i * 0.04}s"
+         onclick="toggleKpiFilter('${c.key}')">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.value}</div>
+      <div class="kpi-sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+// ═══════════ MAP ═══════════
+function renderMap() {
+  const container = document.getElementById('mapContainer');
+  if (!map) {
+    map = L.map(container, { zoomControl: true, attributionControl: false }).setView([23.6, -102.5], 5);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 20,
+      subdomains: 'abcd',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }).addTo(map);
+  }
+
+  // Clear markers
+  mapMarkers.forEach(m => map.removeLayer(m));
+  mapMarkers = [];
+
+  const projs = pipelineData.filter(p => p.lat && p.lng);
+  document.getElementById('mapCount').textContent = projs.length + ' sitios';
+
+  const alertColors = { red: '#ff4757', yellow: '#f5a623', green: '#00AA85', gray: '#828080' };
+
+  projs.forEach(p => {
+    const r = Math.max(5, Math.min(18, (p.potenciaFVNum / 100) * 4 + 4));
+    const color = alertColors[p.alertLevel] || '#828080';
+    const marker = L.circleMarker([p.lat, p.lng], {
+      radius: r, fillColor: color, fillOpacity: 0.7,
+      color: color, weight: 1.5, opacity: 0.9,
+    }).addTo(map);
+
+    const nextStr = p.nextHito ? `${p.nextHito.short}: ${fmtShort(p.nextHito.bestDate)}` : 'Sin hito próx.';
+    const pctStr = p.pctObra ? (parseFloat(p.pctObra) * 100).toFixed(0) + '%' : '—';
+
+    marker.bindPopup(`
+      <div class="map-popup">
+        <strong>${p.proj}</strong> — ${p.sitio}<br>
+        <span class="mp-label">Cuenta</span> ${p.cuenta}<br>
+        <span class="mp-label">PM</span> ${p.pm}<br>
+        <span class="mp-label">% Obra</span> ${pctStr}<br>
+        <span class="mp-label">Próx. hito</span> ${nextStr}<br>
+        <span class="mp-label">Entidad</span> ${p.entidadFed || '—'}
+      </div>
+    `, { maxWidth: 240 });
+
+    marker.on('click', () => {
+      if (mapClickFilter === p.proj) {
+        mapClickFilter = null;
+      } else {
+        mapClickFilter = p.proj;
+        kpiFilter = null; timelineClickFilter = null;
+      }
+      applyFilters();
+    });
+
+    mapMarkers.push(marker);
+  });
+
+  // Fit bounds
+  if (projs.length > 0) {
+    const bounds = L.latLngBounds(projs.map(p => [p.lat, p.lng]));
+    map.fitBounds(bounds.pad(0.15));
+  }
+}
+
+// ═══════════ TIMELINE ═══════════
+function renderTimeline() {
+  const canvas = document.getElementById('chartTimeline');
+  if (charts.timeline) { charts.timeline.destroy(); charts.timeline = null; }
+
+  // Build 12 weeks from today
+  const weeks = [];
+  const mon = startOfWeek(TODAY);
+  for (let i = 0; i < 12; i++) {
+    const w = new Date(mon.getTime() + i * 7 * 86400000);
+    weeks.push({ start: w, label: w.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }), ms: w.getTime() });
+  }
+
+  // Relevant hitos for timeline (skip Inicio Instalación — already happened)
+  const TL_HITOS = HITOS_SERV.slice(1); // Commissioning, Visita Cal, Entrega, Pase
+
+  // Use full filtered pipeline (not sub-filtered by kpi/map/timeline)
+  const fullPipe = rawData.proyectos.filter(isInPipeline).map(enrichProject);
+  const fCuenta = document.getElementById('fCuenta').value;
+  const fPM = document.getElementById('fPM').value;
+  const fEntidad = document.getElementById('fEntidad').value;
+  const fTipo = document.getElementById('fTipo').value;
+  let base = fullPipe;
+  if (fCuenta) base = base.filter(p => p.cuenta === fCuenta);
+  if (fPM) base = base.filter(p => p.pm === fPM);
+  if (fEntidad) base = base.filter(p => p.entidadFed === fEntidad);
+  if (fTipo) base = base.filter(p => p.tipo === fTipo);
+
+  const hitoColors = {
+    'Commissioning': '#00AA85',
+    'Visita Cal.': '#9f7aff',
+    'Entrega Cli.': '#4c9fff',
+    'Pase Serv.': '#ff9f43',
+  };
+
+  const datasets = TL_HITOS.map(hs => {
+    const data = weeks.map(w => {
+      let count = 0;
+      const projs = [];
+      base.forEach(p => {
+        const sh = p.servHitos.find(s => s.key === hs.key);
+        if (!sh || !sh.bestDate || sh.completed) return;
+        const wk = startOfWeek(sh.bestDate).getTime();
+        if (wk === w.ms) { count++; projs.push(p.proj); }
+      });
+      return { count, projs };
+    });
+    return {
+      label: hs.short,
+      data: data.map(d => d.count),
+      backgroundColor: hitoColors[hs.short] || '#828080',
+      borderRadius: 2,
+      _projs: data.map(d => d.projs),
+    };
+  });
+
+  charts.timeline = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: weeks.map(w => w.label),
+      datasets,
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 9 }, color: '#a0aab4', padding: 8 } },
+        tooltip: {
+          callbacks: {
+            afterBody: (items) => {
+              const ds = items[0].datasetIndex;
+              const idx = items[0].dataIndex;
+              const projs = datasets[ds]._projs[idx];
+              return projs.length ? '\n' + projs.join(', ') : '';
+            }
+          }
+        },
+        annotation: undefined,
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 9 }, color: '#5a6577' } },
+        y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 9 }, color: '#5a6577', stepSize: 1 } },
+      },
+      onClick: (e, elems) => {
+        if (!elems.length) { timelineClickFilter = null; kpiFilter = null; mapClickFilter = null; applyFilters(); return; }
+        const dsIdx = elems[0].datasetIndex;
+        const idx = elems[0].index;
+        const hito = TL_HITOS[dsIdx].short;
+        const weekMs = weeks[idx].ms;
+        if (timelineClickFilter && timelineClickFilter.weekMs === weekMs && timelineClickFilter.hito === hito) {
+          timelineClickFilter = null;
+        } else {
+          timelineClickFilter = { weekMs, hito };
+          kpiFilter = null; mapClickFilter = null;
+        }
+        applyFilters();
+      },
+    },
+    plugins: [{
+      // Capacity line
+      id: 'capacityLine',
+      afterDraw(chart) {
+        const yScale = chart.scales.y;
+        const y = yScale.getPixelForValue(CAPACITY);
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([5, 3]);
+        ctx.strokeStyle = 'rgba(255,71,87,0.5)';
+        ctx.lineWidth = 1;
+        ctx.moveTo(chart.chartArea.left, y);
+        ctx.lineTo(chart.chartArea.right, y);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(255,71,87,0.5)';
+        ctx.font = '9px Roboto';
+        ctx.fillText('Capacidad (' + CAPACITY + ')', chart.chartArea.right - 75, y - 4);
+        ctx.restore();
+      }
+    }],
+  });
+}
+
+// ═══════════ PIPELINE TABLE ═══════════
+function renderPipelineTable() {
+  const tbody = document.getElementById('pipelineBody');
+  document.getElementById('pipelineCount').textContent = `(${pipelineData.length} proyectos)`;
+
+  let rows = [...pipelineData];
+  // Sort
+  if (sortState.col) {
+    rows.sort((a, b) => {
+      let va, vb;
+      if (sortState.col === 'diasProxHito') {
+        va = a.diasProxHito ?? 9999; vb = b.diasProxHito ?? 9999;
+      } else if (sortState.col === 'pctObra') {
+        va = parseFloat(a.pctObra) || 0; vb = parseFloat(b.pctObra) || 0;
+      } else if (sortState.col.startsWith('h')) {
+        const hitoKey = { hInicioInst: 'Inicio de Instalación', hCommissioning: 'Commissioning', hVisitaCal: 'Visita Calidad', hEntregaCli: 'Entrega Cliente', hPaseServ: 'Pase Servicios' }[sortState.col];
+        const ha = a.servHitos.find(s => s.key === hitoKey);
+        const hb = b.servHitos.find(s => s.key === hitoKey);
+        va = ha?.bestDate?.getTime() || Infinity; vb = hb?.bestDate?.getTime() || Infinity;
+      } else {
+        va = a[sortState.col] ?? ''; vb = b[sortState.col] ?? '';
+      }
+      if (typeof va === 'number' && typeof vb === 'number') return sortState.asc ? va - vb : vb - va;
+      return sortState.asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+  }
+
+  const alertBadge = lv => {
+    const map = { red: 'badge-red', yellow: 'badge-yellow', green: 'badge-green', gray: 'badge-gray' };
+    const labels = { red: 'Crítico', yellow: 'Atención', green: 'En radar', gray: 'Sin urgencia' };
+    return `<span class="badge ${map[lv]}">${labels[lv]}</span>`;
+  };
+
+  const hitoCell = (sh) => {
+    if (!sh || !sh.hito) return '<span style="color:var(--text3)">—</span>';
+    const d = fmtShort(sh.bestDate);
+    if (sh.completed) return `<span style="color:var(--accent)">✓ ${d}</span>`;
+    if (sh.estatus === 'Atrasado') return `<span style="color:var(--danger)">${d}</span>`;
+    return d;
+  };
+
+  let html = '';
+  rows.forEach(p => {
+    const pctO = parseFloat(p.pctObra);
+    const pctStr = isNaN(pctO) ? '—' : (pctO * 100).toFixed(0) + '%';
+    const pctColor = isNaN(pctO) ? 'var(--text3)' : pctO >= 0.95 ? 'var(--accent)' : pctO >= 0.8 ? 'var(--warn)' : 'var(--text)';
+    const barW = isNaN(pctO) ? 0 : Math.min(100, pctO * 100);
+    const barColor = isNaN(pctO) ? 'transparent' : pctO >= 0.95 ? 'var(--accent)' : pctO >= 0.8 ? 'var(--warn)' : 'var(--info)';
+
+    const expanded = expandedRows.has(p.proj);
+    html += `<tr class="expandable" onclick="toggleRow('${p.proj}')">
+      <td style="font-weight:500;color:var(--accent)">${p.proj}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis" title="${p.sitio}">${p.sitio}</td>
+      <td>${p.cuenta}</td>
+      <td>${p.pm}</td>
+      <td style="color:${pctColor}">${pctStr}<div class="pct-bar"><div class="pct-bar-fill" style="width:${barW}%;background:${barColor}"></div></div></td>
+      <td>${hitoCell(p.servHitos[0])}</td>
+      <td>${hitoCell(p.servHitos[1])}</td>
+      <td>${hitoCell(p.servHitos[2])}</td>
+      <td>${hitoCell(p.servHitos[3])}</td>
+      <td>${hitoCell(p.servHitos[4])}</td>
+      <td style="font-weight:600;${p.diasProxHito !== null && p.diasProxHito <= 7 ? 'color:var(--danger)' : p.diasProxHito !== null && p.diasProxHito <= 14 ? 'color:var(--warn)' : ''}">${p.diasProxHito !== null ? p.diasProxHito + 'd' : '—'}</td>
+      <td>${alertBadge(p.alertLevel)}</td>
+    </tr>`;
+
+    if (expanded) {
+      html += `<tr class="detail-row"><td colspan="12"><div class="detail-inner">`;
+      p.servHitos.forEach(sh => {
+        const statusColor = sh.completed ? 'var(--accent)' : sh.estatus === 'Atrasado' ? 'var(--danger)' : sh.estatus === 'Pendiente' ? 'var(--warn)' : 'var(--text3)';
+        html += `<div class="detail-hito">
+          <div class="dh-name">${sh.short}</div>
+          <div class="dh-date">${fmtShort(sh.bestDate)}</div>
+          <div class="dh-status" style="color:${statusColor}">${sh.estatus || 'Sin datos'}</div>
+          ${sh.hito?.diasDesviacion ? `<div style="font-size:9px;color:var(--text3);margin-top:2px">Desv: ${sh.hito.diasDesviacion > 0 ? '+' : ''}${sh.hito.diasDesviacion}d</div>` : ''}
+        </div>`;
+      });
+      html += `</div></td></tr>`;
+    }
+  });
+
+  tbody.innerHTML = html;
+
+  // Update sort indicators
+  document.querySelectorAll('#pipelineTable th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.sort === sortState.col);
+    const arrow = sortState.col === th.dataset.sort ? (sortState.asc ? ' ▲' : ' ▼') : '';
+    // Strip old arrows
+    th.textContent = th.textContent.replace(/ [▲▼]$/, '') + arrow;
+  });
+}
+
+function toggleRow(proj) {
+  if (expandedRows.has(proj)) expandedRows.delete(proj);
+  else expandedRows.add(proj);
+  renderPipelineTable();
+}
+
+// Table sort
+document.getElementById('pipelineTable').addEventListener('click', e => {
+  const th = e.target.closest('th[data-sort]');
+  if (!th) return;
+  const col = th.dataset.sort;
+  if (sortState.col === col) sortState.asc = !sortState.asc;
+  else { sortState.col = col; sortState.asc = true; }
+  renderPipelineTable();
+});
+
+// ═══════════ ANOMALIES ═══════════
+function renderAnomalies() {
+  const grid = document.getElementById('anomalyGrid');
+  const anomalies = [];
+  const base = rawData.proyectos.filter(isInPipeline).map(enrichProject);
+  const fCuenta = document.getElementById('fCuenta').value;
+  const fPM = document.getElementById('fPM').value;
+  const fEntidad = document.getElementById('fEntidad').value;
+  const fTipo = document.getElementById('fTipo').value;
+  let pool = base;
+  if (fCuenta) pool = pool.filter(p => p.cuenta === fCuenta);
+  if (fPM) pool = pool.filter(p => p.pm === fPM);
+  if (fEntidad) pool = pool.filter(p => p.entidadFed === fEntidad);
+  if (fTipo) pool = pool.filter(p => p.tipo === fTipo);
+
+  // 1. Planeación invertida: Visita Calidad < Commissioning
+  const invertidos = pool.filter(p => {
+    const comm = p.servHitos.find(s => s.key === 'Commissioning');
+    const vc = p.servHitos.find(s => s.key === 'Visita Calidad');
+    if (!comm?.bestDate || !vc?.bestDate) return false;
+    return vc.bestDate < comm.bestDate;
+  });
+  if (invertidos.length) {
+    anomalies.push({
+      type: 'a-danger', title: 'Planeación invertida',
+      body: `${invertidos.length} proyecto${invertidos.length > 1 ? 's' : ''} con Visita Calidad programada antes de Commissioning.`,
+      projs: invertidos.map(p => p.proj).join(', '),
+    });
+  }
+
+  // 2. Avance sin visibilidad: ≥80% sin Commissioning cumplido
+  const sinVis = pool.filter(p => {
+    const pctO = parseFloat(p.pctObra);
+    if (isNaN(pctO) || pctO < 0.80) return false;
+    return !p.servHitos.find(s => s.key === 'Commissioning')?.completed;
+  });
+  if (sinVis.length) {
+    anomalies.push({
+      type: 'a-warn', title: 'Avance sin visibilidad',
+      body: `${sinVis.length} proyecto${sinVis.length > 1 ? 's' : ''} con ≥80% obra pero sin Commissioning cumplido.`,
+      projs: sinVis.map(p => p.proj).join(', '),
+    });
+  }
+
+  // 3. Cluster geográfico: 3+ proyectos en misma entidad en misma semana
+  const entidadWeek = {};
+  pool.forEach(p => {
+    if (!p.entidadFed) return;
+    p.servHitos.forEach(sh => {
+      if (!sh.bestDate || sh.completed) return;
+      const wk = startOfWeek(sh.bestDate).toISOString().split('T')[0];
+      const key = p.entidadFed + '|' + wk;
+      if (!entidadWeek[key]) entidadWeek[key] = [];
+      entidadWeek[key].push(p.proj);
+    });
+  });
+  const clusters = Object.entries(entidadWeek).filter(([, ps]) => new Set(ps).size >= 3);
+  clusters.forEach(([key, ps]) => {
+    const [ent, wk] = key.split('|');
+    const unique = [...new Set(ps)];
+    anomalies.push({
+      type: 'a-info', title: `Cluster: ${ent}`,
+      body: `${unique.length} proyectos con hitos en la semana del ${fmtShort(wk)}. Oportunidad de coordinar visita.`,
+      projs: unique.join(', '),
+    });
+  });
+
+  // 4. Reactivaciones potenciales: On Hold projects that could enter pipeline
+  const onHold = rawData.proyectos.filter(p => {
+    if (p.estatusAdO !== 'On Hold') return false;
+    const h = getHito(p, 'Inicio de Instalación');
+    return h && getBestDate(h);
+  });
+  if (onHold.length) {
+    anomalies.push({
+      type: 'a-warn', title: 'Reactivaciones potenciales',
+      body: `${onHold.length} proyecto${onHold.length > 1 ? 's' : ''} On Hold con Inicio Instalación programado. Si se reactivan, entrarán al pipeline.`,
+      projs: onHold.map(p => p.proj).join(', '),
+    });
+  }
+
+  if (anomalies.length === 0) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:16px;">Sin anomalías detectadas.</div>';
+    return;
+  }
+
+  grid.innerHTML = anomalies.map(a => `
+    <div class="anomaly-card ${a.type} animate-in">
+      <div class="anomaly-title">${a.title}</div>
+      <div class="anomaly-body">${a.body}</div>
+      <div class="anomaly-projs">${a.projs}</div>
+    </div>`).join('');
+}
+
+// ─── INIT ────────────────────────────────────────────────────────
+fetchData();
+setInterval(fetchData, REFRESH_MS);
+</script>
+</body>
+</html>
