@@ -833,10 +833,12 @@ function renderMap() {
     mapMarkers.push(marker);
   });
 
-  // Fit bounds
+  // Fit bounds or reset to Mexico
   if (projs.length > 0) {
     const bounds = L.latLngBounds(projs.map(p => [p.lat, p.lng]));
     map.fitBounds(bounds.pad(0.15));
+  } else {
+    map.setView([23.6, -102.5], 5);
   }
 }
 
