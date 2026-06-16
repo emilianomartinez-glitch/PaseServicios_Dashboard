@@ -402,9 +402,19 @@ footer {
 .hbar-track { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
 .hbar-fill { height: 100%; border-radius: 3px; }
 
+/* ═══════════ APPROVAL GATE ═══════════ */
+.aprob-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.aprob-col { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px; }
+.aprob-col-title { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.aprob-row { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text2); padding: 3px 0; border-bottom: 1px solid var(--border2); }
+.aprob-row:last-child { border-bottom: none; }
+.aprob-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.aprob-count { font-family: 'Alexandria', sans-serif; font-weight: 700; margin-left: auto; }
+
 @media (max-width: 900px) {
   .funnel-grid { grid-template-columns: repeat(3, 1fr); }
   .zone-grid { grid-template-columns: repeat(2, 1fr); }
+  .aprob-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 600px) {
   .funnel-grid { grid-template-columns: repeat(2, 1fr); }
@@ -572,6 +582,30 @@ footer {
       <div class="section-label">Pipeline de calidad</div>
       <div class="funnel-grid" id="calidadFunnel"></div>
 
+      <!-- Gate de aprobaciones + Presupuesto -->
+      <div class="section-label">Gate de liberación a O&M</div>
+      <div class="dual-grid" style="margin-bottom:16px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Aprobaciones por tipo</div>
+            <div style="font-size:9px;color:var(--text3)" id="aprobTotalSitios"></div>
+          </div>
+          <div class="card-body">
+            <div class="aprob-grid" id="calidadAprobaciones"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Viáticos comprometidos — por PM</div>
+            <div style="font-size:9px;color:var(--accent)" id="presupuestoTotal"></div>
+          </div>
+          <div class="card-body">
+            <ul class="hbar-list" id="calidadPresupuesto"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hallazgos + Visitas -->
       <div class="dual-grid" style="margin-bottom:16px;">
         <div class="card">
           <div class="card-header">
@@ -601,11 +635,12 @@ footer {
               <th data-sort="proyecto">Proyecto</th>
               <th data-sort="pm">PM</th>
               <th data-sort="supervisor">Supervisor</th>
-              <th data-sort="abiertos">NCs Abiertos</th>
-              <th data-sort="total">Total NCs</th>
-              <th data-sort="diasAbierto">Días Abierto</th>
+              <th data-sort="abiertos">NCs Ab/Tot</th>
+              <th data-sort="diasAbierto">Días Ab.</th>
               <th data-sort="estatusCalidad">Estatus Calidad</th>
+              <th>Cal/Mon/PSMs</th>
               <th data-sort="conPoliza">Póliza</th>
+              <th>Scoop</th>
               <th>Alerta</th>
             </tr></thead>
             <tbody id="calidadBody"></tbody>
@@ -1653,36 +1688,40 @@ function switchTab(tab) {
 const API_URL_CALIDAD        = 'https://egenlight.app.n8n.cloud/webhook/enlight-calidad';
 const API_URL_MANTENIMIENTOS = 'https://egenlight.app.n8n.cloud/webhook/enlight-mantenimientos';
 
-const MOCK_CALIDAD = {
-  hallazgos: [
-    { nombreProyecto: 'Bio Pappel Chiapas', projInstalaciones: 'PROJ-536', projOM: 803, pm: 'Julio Martinez', supervisor: 'Rubén García', totalHallazgos: 6, abiertos: 2, cerrados: 4, diasAbierto: 45, fechaEnvioReporte: '2025-10-03' },
-    { nombreProyecto: 'Boehringer STO', projInstalaciones: 'PROJ-217', projOM: null, pm: 'Mario Iturbe', supervisor: 'Santiago Medina', totalHallazgos: 5, abiertos: 3, cerrados: 2, diasAbierto: 256, fechaEnvioReporte: '2024-10-03' },
-    { nombreProyecto: 'Grupo Diestra Villahermosa', projInstalaciones: 'PROJ-630', projOM: null, pm: 'Mario Iturbe', supervisor: 'Gustavo Chavez', totalHallazgos: 4, abiertos: 0, cerrados: 4, diasAbierto: 0, fechaEnvioReporte: '2026-01-15' },
-    { nombreProyecto: 'DICOIOSA Naucalpan', projInstalaciones: 'PROJ-727', projOM: null, pm: 'Julio Martinez', supervisor: 'Rubén García', totalHallazgos: 8, abiertos: 5, cerrados: 3, diasAbierto: 78, fechaEnvioReporte: '2025-12-01' },
-    { nombreProyecto: 'Bio Pappel Guadalajara', projInstalaciones: 'PROJ-534', projOM: 801, pm: 'Julio Martinez', supervisor: 'Ángel Corona', totalHallazgos: 3, abiertos: 1, cerrados: 2, diasAbierto: 30, fechaEnvioReporte: '2026-02-15' },
-  ],
-  programacion: [
-    { proj: 'PROJ-630', proyecto: 'Grupo Diestra Villahermosa', cuenta: 'GRUPO DIESTRA', pm: 'Mario Iturbe', supervisor: 'Gustavo Chavez', visitaCalidad: '2026-02-10', estatusCalidad: 'Aceptado', conPoliza: 'Si' },
-    { proj: 'PROJ-640', proyecto: 'Grupo Diestra STO Villahermosa', cuenta: 'GRUPO DIESTRA', pm: 'Mario Iturbe', supervisor: 'Gustavo Chavez', visitaCalidad: null, estatusCalidad: 'Próximo a visitar', conPoliza: 'No' },
-    { proj: 'PROJ-536', proyecto: 'Bio Pappel Chiapas', cuenta: 'BIO PAPPEL', pm: 'Julio Martinez', supervisor: 'Rubén García', visitaCalidad: '2025-10-03', estatusCalidad: 'En espera de correcciones', conPoliza: 'Si' },
-    { proj: 'PROJ-534', proyecto: 'Bio Pappel Guadalajara', cuenta: 'BIO PAPPEL', pm: 'Julio Martinez', supervisor: 'Ángel Corona', visitaCalidad: '2026-02-15', estatusCalidad: 'Aceptado', conPoliza: 'Si' },
-    { proj: 'PROJ-727', proyecto: 'DICOIOSA Naucalpan', cuenta: 'DICOIOSA', pm: 'Julio Martinez', supervisor: 'Rubén García', visitaCalidad: '2025-12-01', estatusCalidad: 'En espera de correcciones', conPoliza: 'No' },
-    { proj: 'PROJ-217', proyecto: 'Boehringer STO', cuenta: 'BOEHRINGER', pm: 'Mario Iturbe', supervisor: 'Santiago Medina', visitaCalidad: null, estatusCalidad: 'Pendiente', conPoliza: 'No' },
-  ],
-  calendario: [
-    { proyecto: 'SFV Legrand Querétaro', projInstalaciones: 'PROJ-628', integrante: 'Rubén García', fechaEntrada: '2026-06-18', fechaSalida: '2026-06-19', tipoVisita: 'Post-commissioning', estatusVisita: 'Programada', reserva: 'Confirmada', estatusAceptacion: 'Pendiente' },
-    { proyecto: 'SFV Waldaschaff León', projInstalaciones: 'PROJ-238', integrante: 'Santiago Medina', fechaEntrada: '2026-06-23', fechaSalida: '2026-06-24', tipoVisita: 'Post-commissioning', estatusVisita: 'Programada', reserva: 'Confirmada', estatusAceptacion: 'Pendiente' },
-    { proyecto: 'Bio Pappel Chiapas', projInstalaciones: 'PROJ-536', integrante: 'Gustavo Chavez', fechaEntrada: '2026-07-02', fechaSalida: '2026-07-03', tipoVisita: 'Seguimiento NC', estatusVisita: 'Programada', reserva: 'Pendiente', estatusAceptacion: 'Pendiente' },
-    { proyecto: 'DICOIOSA Naucalpan', projInstalaciones: 'PROJ-727', integrante: 'Rubén García', fechaEntrada: '2026-07-10', fechaSalida: '2026-07-11', tipoVisita: 'Seguimiento NC', estatusVisita: 'Reporte enviado', reserva: 'Confirmada', estatusAceptacion: 'En espera de respuesta de NC' },
-    { proyecto: 'Forvia Puebla', projInstalaciones: 'PROJ-205', integrante: 'Melissa Solorio', fechaEntrada: '2026-07-21', fechaSalida: '2026-07-22', tipoVisita: 'Post-commissioning', estatusVisita: 'Programada', reserva: 'Pendiente', estatusAceptacion: 'Pendiente' },
-  ],
-  equipos: [
-    { equipo: 'Dron DJI Mavic 3 Enterprise', serie: '1581F7K3C25B800D29UU', garantia: 'Si', finGarantia: '2027-06-01', frecuenciaCalib: 'Semestral', proximoMant: '2026-12-01' },
-    { equipo: 'Megóhmetro digital AEMC 6526', serie: 'Pendiente', garantia: 'Si', finGarantia: '2027-05-28', frecuenciaCalib: 'Anual', proximoMant: '2027-05-28' },
-    { equipo: 'Analizador de redes Fluke 435-II', serie: 'C320R00123', garantia: 'No', finGarantia: null, frecuenciaCalib: 'Semestral', proximoMant: '2026-07-15' },
-    { equipo: 'Multímetro Fluke 87V', serie: 'AB1234567', garantia: 'Si', finGarantia: '2025-12-01', frecuenciaCalib: 'Anual', proximoMant: '2026-06-20' },
-  ],
-};
+// Mock: flat array con field names exactos del webhook real (mismo formato que payload_webhookCaidad.json)
+const MOCK_CALIDAD_RAW = [
+  // ── Sheet 1: Control de liberaciones y pase (91 rows en producción) ──
+  {"Sitio":"Bio Pappel Chiapas","PROJ Instalaciones":"PROJ-536","PROJ O&M":803,"PM":"Julio Martinez","Aprobación de calidad":"Aceptado","Aprobación de monitoreo":"Aceptado","Aprobación de Coordinación de PSMs":"Aceptado","Con póliza de servicios":"No","Observaciones":"En espera de activación de póliza","Actualización despues de la sesión":"NO HAY PÓLIZA","Aceptado en scoop ":""},
+  {"Sitio":"Bio Pappel Guadalajara","PROJ Instalaciones":"PROJ-534","PROJ O&M":801,"PM":"Julio Martinez","Aprobación de calidad":"Aceptado","Aprobación de monitoreo":"Aceptado","Aprobación de Coordinación de PSMs":"Aceptado","Con póliza de servicios":"No","Observaciones":"En espera de póliza","Actualización despues de la sesión":"NO HAY PÓLIZA","Aceptado en scoop ":""},
+  {"Sitio":"Bio Pappel Packaging Bajio","PROJ Instalaciones":"PROJ-535","PROJ O&M":802,"PM":"Julio Martinez","Aprobación de calidad":"Aceptado","Aprobación de monitoreo":"Aceptado","Aprobación de Coordinación de PSMs":"Aceptado","Con póliza de servicios":"No","Observaciones":"Pendiente contrato","Actualización despues de la sesión":"Pendiente de contrato","Aceptado en scoop ":"15/05/26"},
+  {"Sitio":"Faurecia 0420","PROJ Instalaciones":"PROJ-205","PROJ O&M":740,"PM":"Jorge Castellanos","Aprobación de calidad":"Aceptado","Aprobación de monitoreo":"Aceptado","Aprobación de Coordinación de PSMs":"Aceptado","Con póliza de servicios":"Si","Observaciones":"En servicios","Actualización despues de la sesión":"Aceptado","Aceptado en scoop ":"03/03/2026"},
+  {"Sitio":"Grupo Diestra Villahermosa","PROJ Instalaciones":"PROJ-630","PROJ O&M":"","PM":"Mario Iturbe","Aprobación de calidad":"Aceptado","Aprobación de monitoreo":"En revisión","Aprobación de Coordinación de PSMs":"En revisión","Con póliza de servicios":"No","Observaciones":"Pendiente monitoreo","Actualización despues de la sesión":"","Aceptado en scoop ":""},
+  {"Sitio":"Boehringer STO","PROJ Instalaciones":"PROJ-217","PROJ O&M":"","PM":"Mario Iturbe","Aprobación de calidad":"No revisado","Aprobación de monitoreo":"","Aprobación de Coordinación de PSMs":"","Con póliza de servicios":"No","Observaciones":"Pendiente visita","Actualización despues de la sesión":"","Aceptado en scoop ":""},
+  {"Sitio":"DICOIOSA Naucalpan","PROJ Instalaciones":"PROJ-727","PROJ O&M":"","PM":"Julio Martinez","Aprobación de calidad":"Aceptado","Aprobación de monitoreo":"Aceptado","Aprobación de Coordinación de PSMs":"En revisión","Con póliza de servicios":"No","Observaciones":"Falta aprobación PSMs","Actualización despues de la sesión":"","Aceptado en scoop ":""},
+  // ── Sheet 2: Control de programación y presupuesto (91 rows en producción) ──
+  {"PROJ":"PROJ-630","Proyecto":"SFV_Grupo Diestra_Marriott_Villahermosa","Cuenta":"GRUPO DIESTRA","PM":"Mario Iturbe","KAM":"","Supervisor":"Noe Omar Hernandez","Tipo Proyecto":"CAPEX MICRORRED","Tipo Instalación":"Losa","Tipo de proveeduría":"EPC Mixto","Commissioning/Encendido Net Zero":"19/12/2025","Visita calidad a sitio":"01/06/2026","Estatus ante calidad":"Próximo a visitar","¿Se entregó check list de Pre-commissioning?\n":"No","Avion":11000,"Renta de Carro":1500,"Hospedaje":6000,"Gasolina":1000,"Casetas":"","Total a cargar en la Mendel":4300,"Total viaticos\n(Comida - Caseta - Gasolina)":22800,"Persona a la que se le cargará el presupuesto":"Esaú Alonso"},
+  {"PROJ":"PROJ-807","Proyecto":"SFV_Resideo Sitio 2_Ampliación","Cuenta":"BRK","PM":"Ricardo García","KAM":"","Supervisor":"Pedro Flores","Tipo Proyecto":"CAPEX SFV","Tipo Instalación":"Lámina","Tipo de proveeduría":"EPC Mixto","Commissioning/Encendido Net Zero":"27/03/2026","Visita calidad a sitio":"20/03/2026","Estatus ante calidad":"En espera de correcciones","¿Se entregó check list de Pre-commissioning?\n":"No","Avion":0,"Renta de Carro":0,"Hospedaje":0,"Gasolina":1000,"Casetas":"","Total a cargar en la Mendel":4300,"Total viaticos\n(Comida - Caseta - Gasolina)":4300,"Persona a la que se le cargará el presupuesto":"Omar López"},
+  {"PROJ":"PROJ-213","Proyecto":"Liverpool Xalapa Crystal","Cuenta":"LIVERPOOL","PM":"Ricardo García","KAM":"","Supervisor":"Jonathan Vela","Tipo Proyecto":"CAPEX SFV","Tipo Instalación":"E. Secundaria","Tipo de proveeduría":"EPC Enlight","Commissioning/Encendido Net Zero":"31/05/2026","Visita calidad a sitio":"04/02/2026","Estatus ante calidad":"Próximo a visitar","¿Se entregó check list de Pre-commissioning?\n":"No","Avion":0,"Renta de Carro":0,"Hospedaje":0,"Gasolina":1638,"Casetas":2000,"Total a cargar en la Mendel":6938,"Total viaticos\n(Comida - Caseta - Gasolina)":6938,"Persona a la que se le cargará el presupuesto":"Esaú Alonso"},
+  {"PROJ":"PROJ-536","Proyecto":"SFV Bio Pappel Chiapas","Cuenta":"BIO PAPPEL","PM":"Julio Martinez","KAM":"","Supervisor":"Rubén García","Tipo Proyecto":"CAPEX SFV","Tipo Instalación":"Lámina","Tipo de proveeduría":"EPC Enlight","Commissioning/Encendido Net Zero":"15/09/2025","Visita calidad a sitio":"03/10/2025","Estatus ante calidad":"En espera de correcciones","¿Se entregó check list de Pre-commissioning?\n":"No","Avion":5000,"Renta de Carro":0,"Hospedaje":3000,"Gasolina":1200,"Casetas":"","Total a cargar en la Mendel":4300,"Total viaticos\n(Comida - Caseta - Gasolina)":9200,"Persona a la que se le cargará el presupuesto":"Julio Martinez"},
+  {"PROJ":"PROJ-727","Proyecto":"SFV DICOIOSA Naucalpan Planta 2","Cuenta":"DICOIOSA","PM":"Julio Martinez","KAM":"","Supervisor":"Rubén García","Tipo Proyecto":"CAPEX SFV","Tipo Instalación":"Losa","Tipo de proveeduría":"EPC Mixto","Commissioning/Encendido Net Zero":"01/11/2025","Visita calidad a sitio":"01/12/2025","Estatus ante calidad":"Liberado","¿Se entregó check list de Pre-commissioning?\n":"No","Avion":0,"Renta de Carro":1000,"Hospedaje":0,"Gasolina":500,"Casetas":400,"Total a cargar en la Mendel":4200,"Total viaticos\n(Comida - Caseta - Gasolina)":4200,"Persona a la que se le cargará el presupuesto":"Julio Martinez"},
+  // ── Sheet 3: Calendario (23 rows en producción) ──
+  {"Proyecto":"DICOIOSA_Naucalpan_Planta 2","Tipo":"FV","PROJ Instalaciones":727,"PROJ O&M":"","Integrante ":"","Fecha de entrada":"11/11/2025","Fecha de salida":"Pendiente","Tipo de visita":"Post-comissioning","Estatus de visita":"Reporte enviado","Reserva":"Confirmada","Fecha de envío de reporte":"19/11/2025","Estatus de aceptación":"Aceptado","Comentarios":""},
+  {"Proyecto":"ANTEXTEXTIL_Tlaxcala","Tipo":"FV","PROJ Instalaciones":731,"PROJ O&M":"","Integrante ":"Esaú","Fecha de entrada":"05/04/26","Fecha de salida":"Pendiente","Tipo de visita":"Post-comissioning","Estatus de visita":"Reporte enviado","Reserva":"Confirmada","Fecha de envío de reporte":"11/05/2026","Estatus de aceptación":"Pendiente","Comentarios":"Visita post-commissioning"},
+  {"Proyecto":"Grupo Diestra_Marriott_Aguascalientes","Tipo":"FV + STO","PROJ Instalaciones":628,"PROJ O&M":"","Integrante ":"Omar","Fecha de entrada":"08/04/2026","Fecha de salida":"09/04/2026","Tipo de visita":"Post-comissioning","Estatus de visita":"Reporte enviado","Reserva":"Confirmada","Fecha de envío de reporte":"22/04/2026","Estatus de aceptación":"En espera de respuesta de NC","Comentarios":""},
+  {"Proyecto":"SFV Bio Pappel Chiapas","Tipo":"FV","PROJ Instalaciones":536,"PROJ O&M":803,"Integrante ":"Omar","Fecha de entrada":"2026-07-02","Fecha de salida":"2026-07-03","Tipo de visita":"Post-comissioning","Estatus de visita":"Fecha tentativa","Reserva":"Pendiente","Fecha de envío de reporte":"","Estatus de aceptación":"","Comentarios":"Seguimiento NC"},
+  {"Proyecto":"SFV Liverpool Xalapa","Tipo":"FV","PROJ Instalaciones":213,"PROJ O&M":"","Integrante ":"Esaú","Fecha de entrada":"2026-07-15","Fecha de salida":"2026-07-16","Tipo de visita":"Pre-comissioning","Estatus de visita":"Concretada","Reserva":"Confirmada","Fecha de envío de reporte":"","Estatus de aceptación":"","Comentarios":""},
+  // ── Sheet 4: Control de hallazgos (67 rows en producción) ──
+  {"Nombre de proyecto":"Boehringer SFV ","PROJ Instalaciones":"PROJ-126","PROJ O&M":"","Project manager responsable":"Aranxa Monterrubio","Supervisor responsable":"Alan Calva","# de visita":2,"Número de hallazgos totales":6,"Número de hallazgos Abiertos":0,"Número de hallazgos Cerrados":6,"Fecha de envio reporte":"3/10/2025","Fecha de cierre":"3/03/2026","Días abierto":256,"Fecha de último seguimiento":"21/01/2026","Fecha de última respuesta instalaciones":"14/01/2026","Comentarios":"Se acepta con hallazgo pendiente de sombras","Año":2025},
+  {"Nombre de proyecto":"Boehringer STO","PROJ Instalaciones":"PROJ-217","PROJ O&M":"","Project manager responsable":"Aranxa Monterrubio","Supervisor responsable":"Alan Calva","# de visita":1,"Número de hallazgos totales":5,"Número de hallazgos Abiertos":3,"Número de hallazgos Cerrados":2,"Fecha de envio reporte":"3/10/2025","Fecha de cierre":"","Días abierto":256,"Fecha de último seguimiento":"21/01/2026","Fecha de última respuesta instalaciones":"14/01/2026","Comentarios":"No se ve el sistema en Monitoreo","Año":2025},
+  {"Nombre de proyecto":"Diestra Santa Fe","PROJ Instalaciones":"PROJ-632","PROJ O&M":"","Project manager responsable":"Karen Cruz","Supervisor responsable":"Alan Calva","# de visita":1,"Número de hallazgos totales":9,"Número de hallazgos Abiertos":1,"Número de hallazgos Cerrados":8,"Fecha de envio reporte":"10/12/2025","Fecha de cierre":"","Días abierto":188,"Fecha de último seguimiento":"26/02/2026","Fecha de última respuesta instalaciones":"16/02/2026","Comentarios":"Pendiente termografía","Año":2025},
+  {"Nombre de proyecto":"Faurecia 0425","PROJ Instalaciones":"PROJ-177","PROJ O&M":876,"Project manager responsable":"Jorge Castellanos","Supervisor responsable":"Alejandra Campos","# de visita":2,"Número de hallazgos totales":31,"Número de hallazgos Abiertos":0,"Número de hallazgos Cerrados":31,"Fecha de envio reporte":"30/09/2025","Fecha de cierre":"16/02/2026","Días abierto":259,"Fecha de último seguimiento":"27/01/2026","Fecha de última respuesta instalaciones":"28/01/2026","Comentarios":"Liberado con pase de cuentas","Año":2025},
+  {"Nombre de proyecto":"Faurecia 0940 S1_FIS","PROJ Instalaciones":"PROJ-176","PROJ O&M":"","Project manager responsable":"Jorge Castellanos","Supervisor responsable":"Sergio Sanchez","# de visita":1,"Número de hallazgos totales":19,"Número de hallazgos Abiertos":19,"Número de hallazgos Cerrados":0,"Fecha de envio reporte":"3/03/2026","Fecha de cierre":"","Días abierto":105,"Fecha de último seguimiento":"29/09/2025","Fecha de última respuesta instalaciones":"29/09/2025","Comentarios":"Sin correcciones generadas","Año":""},
+  // ── Sheet 5: Control de equipos (20 rows en producción) ──
+  {"Equipo/Herramienta (Marca y modelo)":"Dron DJI Mavic 3 Enterprise - DJI - MATRICE 4T","No. Serie":"1581F7K3C25B800D29UU","¿Cuenta con garantía?":"Si","Fecha de término de garantía":"2027-06-01","Frecuencia de calibración":"Semestral","Fecha proxima de mantenimiento o calibración":"2026-12-01"},
+  {"Equipo/Herramienta (Marca y modelo)":"Megóhmetro digital/analógico - AEMC - 6526","No. Serie":"Pendiente","¿Cuenta con garantía?":"Si","Fecha de término de garantía":"2027-05-28","Frecuencia de calibración":"Anual","Fecha proxima de mantenimiento o calibración":"2027-05-28"},
+  {"Equipo/Herramienta (Marca y modelo)":"PV Isotest - HT - HT-5004","No. Serie":"Pendiente","¿Cuenta con garantía?":"Si","Fecha de término de garantía":"2028-05-29","Frecuencia de calibración":"Anual","Fecha proxima de mantenimiento o calibración":"2027-05-29"},
+  {"Equipo/Herramienta (Marca y modelo)":"Multimetro digital - Klein Tools - CL900","No. Serie":"Pendiente","¿Cuenta con garantía?":"Si","Fecha de término de garantía":"2027-06-01","Frecuencia de calibración":"","Fecha proxima de mantenimiento o calibración":"Pendiente"},
+];
 
 const MOCK_MANT = {
   mantenimientos: [
@@ -1708,20 +1747,105 @@ let chartCalidad = null;
 let chartPolizas = null;
 let chartSuperv = null;
 
+// ─── PARSE CALIDAD PAYLOAD ───────────────────────────────────────
+// El webhook devuelve un array plano de 292 registros con 5 schemas distintos.
+// Los detectamos por campos únicos de cada hoja y normalizamos a aliases limpios.
+function parseCalidadPayload(arr) {
+  const lib = [], prog = [], cal = [], hall = [], equip = [];
+  for (const r of arr) {
+    if ('Equipo/Herramienta (Marca y modelo)' in r) {
+      equip.push({
+        equipo: r['Equipo/Herramienta (Marca y modelo)'] || '',
+        serie: r['No. Serie'] || '',
+        garantia: r['¿Cuenta con garantía?'] || '',
+        finGarantia: r['Fecha de término de garantía'] || '',
+        frecuenciaCalib: r['Frecuencia de calibración'] || '',
+        proximoMant: r['Fecha proxima de mantenimiento o calibración'] || '',
+      });
+    } else if ('Número de hallazgos totales' in r) {
+      const t = parseInt(r['Número de hallazgos totales']) || 0;
+      hall.push({
+        nombreProyecto: (r['Nombre de proyecto'] || '').trim(),
+        projInstalaciones: r['PROJ Instalaciones'] || '',
+        projOM: r['PROJ O&M'] || null,
+        pm: r['Project manager responsable'] || '',
+        supervisor: r['Supervisor responsable'] || '',
+        visita: r['# de visita'] || 1,
+        total: t, totalHallazgos: t,
+        abiertos: parseInt(r['Número de hallazgos Abiertos']) || 0,
+        cerrados: parseInt(r['Número de hallazgos Cerrados']) || 0,
+        diasAbierto: parseInt(r['Días abierto']) || 0,
+        fechaEnvioReporte: r['Fecha de envio reporte'] || '',
+        fechaCierre: r['Fecha de cierre'] || '',
+        ultimoSeguimiento: r['Fecha de último seguimiento'] || '',
+        año: r['Año'] || '',
+        comentarios: r['Comentarios'] || '',
+      });
+    } else if ('Tipo de visita' in r) {
+      cal.push({
+        proyecto: r['Proyecto'] || '',
+        projInstalaciones: r['PROJ Instalaciones'] || '',
+        projOM: r['PROJ O&M'] || '',
+        integrante: (r['Integrante '] || r['Integrante'] || '').trim(),
+        fechaEntrada: r['Fecha de entrada'] || '',
+        fechaSalida: r['Fecha de salida'] || '',
+        tipoVisita: r['Tipo de visita'] || '',
+        estatusVisita: r['Estatus de visita'] || '',
+        reserva: r['Reserva'] || '',
+        fechaEnvioReporte: r['Fecha de envío de reporte'] || r['Fecha de envio de reporte'] || '',
+        estatusAceptacion: r['Estatus de aceptación'] || r['Estatus de aceptacion'] || '',
+        comentarios: r['Comentarios'] || '',
+      });
+    } else if ('Estatus ante calidad' in r) {
+      prog.push({
+        proj: r['PROJ'] || '',
+        proyecto: r['Proyecto'] || '',
+        cuenta: r['Cuenta'] || '',
+        pm: r['PM'] || '',
+        supervisor: r['Supervisor'] || '',
+        tipoProyecto: r['Tipo Proyecto'] || '',
+        tipoInstalacion: r['Tipo Instalación'] || '',
+        commissioning: r['Commissioning/Encendido Net Zero'] || '',
+        visitaCalidad: r['Visita calidad a sitio'] || '',
+        estatusCalidad: r['Estatus ante calidad'] || '',
+        totalMendel: parseFloat(r['Total a cargar en la Mendel']) || 0,
+        totalViaticos: parseFloat(r['Total viaticos\n(Comida - Caseta - Gasolina)']) || 0,
+        avion: parseFloat(r['Avion']) || 0,
+        responsable: r['Persona a la que se le cargará el presupuesto'] || '',
+      });
+    } else if ('Aprobación de calidad' in r || 'Sitio' in r) {
+      lib.push({
+        sitio: r['Sitio'] || '',
+        proj: r['PROJ Instalaciones'] || '',
+        projOM: r['PROJ O&M'] || null,
+        pm: r['PM'] || '',
+        aprobCalidad: r['Aprobación de calidad'] || '',
+        aprobMonitoreo: r['Aprobación de monitoreo'] || '',
+        aprobPSMs: r['Aprobación de Coordinación de PSMs'] || '',
+        conPoliza: r['Con póliza de servicios'] || '',
+        observaciones: r['Observaciones'] || '',
+        actualizacion: r['Actualización despues de la sesión'] || '',
+        aceptadoScoop: ((r['Aceptado en scoop '] || r['Aceptado en scoop'] || '')).trim(),
+      });
+    }
+  }
+  return { liberaciones: lib, programacion: prog, calendario: cal, hallazgos: hall, equipos: equip };
+}
+
 // ─── FETCH CALIDAD ───────────────────────────────────────────────
 async function fetchCalidad() {
   document.getElementById('loadingCalidad').style.display = 'flex';
   document.getElementById('mainCalidad').style.display = 'none';
   try {
-    let data;
+    let raw;
     try {
       const resp = await fetch(API_URL_CALIDAD);
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      data = await resp.json();
+      raw = await resp.json();
     } catch (_) {
-      data = MOCK_CALIDAD; // fallback to mock
+      raw = MOCK_CALIDAD_RAW;
     }
-    rawCalidad = data;
+    rawCalidad = parseCalidadPayload(raw);
     document.getElementById('loadingCalidad').style.display = 'none';
     document.getElementById('mainCalidad').style.display = 'block';
     applyCalidadFilters();
@@ -1758,18 +1882,19 @@ async function fetchMantenimientos() {
 // ─── CALIDAD FILTERS ─────────────────────────────────────────────
 function buildCalidadFilterOptions() {
   if (!rawCalidad) return;
-  const pms = [...new Set(rawCalidad.programacion.map(p => p.pm).filter(Boolean))].sort();
+  const cur = id => document.getElementById(id)?.value || '';
+  // PMs from both sheets for broader coverage
+  const pms = [...new Set([...rawCalidad.programacion, ...rawCalidad.liberaciones].map(p => p.pm).filter(Boolean))].sort();
   const sups = [...new Set(rawCalidad.programacion.map(p => p.supervisor).filter(Boolean))].sort();
   const ests = [...new Set(rawCalidad.programacion.map(p => p.estatusCalidad).filter(Boolean))].sort();
-
-  const fill = (id, vals, cur) => {
+  const fill = (id, vals) => {
     const el = document.getElementById(id); if (!el) return;
-    const first = id === 'cPM' ? 'Todos' : id === 'cSupervisor' ? 'Todos' : 'Todos';
-    el.innerHTML = `<option value="">${first}</option>` + vals.map(v => `<option${v === cur ? ' selected' : ''}>${v}</option>`).join('');
+    const cv = cur(id);
+    el.innerHTML = `<option value="">Todos</option>` + vals.map(v => `<option${v === cv ? ' selected' : ''}>${v}</option>`).join('');
   };
-  fill('cPM', pms, document.getElementById('cPM')?.value);
-  fill('cSupervisor', sups, document.getElementById('cSupervisor')?.value);
-  fill('cEstatus', ests, document.getElementById('cEstatus')?.value);
+  fill('cPM', pms);
+  fill('cSupervisor', sups);
+  fill('cEstatus', ests);
 }
 
 function applyCalidadFilters() {
@@ -1779,15 +1904,23 @@ function applyCalidadFilters() {
   const fSup = document.getElementById('cSupervisor').value;
   const fEst = document.getElementById('cEstatus').value;
 
-  // Merge programacion + hallazgos by proj
+  // Merge Sheet2 programacion + Sheet4 hallazgos + Sheet1 liberaciones by PROJ
   const hallMap = {};
   rawCalidad.hallazgos.forEach(h => { hallMap[h.projInstalaciones] = h; });
+  const libMap = {};
+  rawCalidad.liberaciones.forEach(l => { libMap[l.proj] = l; });
 
   let rows = rawCalidad.programacion.map(p => ({
     ...p,
     abiertos: hallMap[p.proj]?.abiertos ?? 0,
-    total: hallMap[p.proj]?.totalHallazgos ?? 0,
+    total: hallMap[p.proj]?.total ?? 0,
     diasAbierto: hallMap[p.proj]?.diasAbierto ?? 0,
+    // Póliza desde Sheet 1 (más confiable que Sheet 2)
+    conPoliza: libMap[p.proj]?.conPoliza ?? '',
+    aprobCalidad: libMap[p.proj]?.aprobCalidad ?? '',
+    aprobMonitoreo: libMap[p.proj]?.aprobMonitoreo ?? '',
+    aprobPSMs: libMap[p.proj]?.aprobPSMs ?? '',
+    aceptadoScoop: libMap[p.proj]?.aceptadoScoop ?? '',
   }));
 
   if (fPM) rows = rows.filter(r => r.pm === fPM);
@@ -1807,6 +1940,8 @@ function clearCalidadFilters() {
 function renderCalidad() {
   renderCalidadKPIs();
   renderCalidadFunnel();
+  renderAprobaciones();
+  renderPresupuesto();
   renderCalidadHbar();
   renderCalidadTimeline();
   renderCalidadTable();
@@ -1815,25 +1950,37 @@ function renderCalidad() {
 }
 
 function renderCalidadKPIs() {
-  const hallazgos = rawCalidad.hallazgos;
+  const { hallazgos, programacion, liberaciones, equipos } = rawCalidad;
+
+  // Sheet 4 — Hallazgos
   const totalAbiertos = hallazgos.reduce((s, h) => s + (h.abiertos || 0), 0);
-  const promDias = hallazgos.filter(h => h.abiertos > 0).length > 0
-    ? Math.round(hallazgos.filter(h => h.abiertos > 0).reduce((s, h) => s + h.diasAbierto, 0) / hallazgos.filter(h => h.abiertos > 0).length)
-    : 0;
-  const pendVisita = rawCalidad.programacion.filter(p => ['Pendiente','Próximo a visitar'].includes(p.estatusCalidad)).length;
-  const enEspera = rawCalidad.programacion.filter(p => p.estatusCalidad === 'En espera de correcciones').length;
-  const sinPoliza = rawCalidad.programacion.filter(p => p.conPoliza !== 'Si').length;
-  const equiposCrit = rawCalidad.equipos.filter(e => {
+  const conNC = hallazgos.filter(h => h.abiertos > 0);
+  const promDias = conNC.length > 0
+    ? Math.round(conNC.reduce((s, h) => s + h.diasAbierto, 0) / conNC.length) : 0;
+
+  // Sheet 1 — Liberaciones (aprobaciones)
+  const totalSitios = liberaciones.length;
+  const listos = liberaciones.filter(l =>
+    l.aprobCalidad === 'Aceptado' && l.aprobMonitoreo === 'Aceptado' && l.aprobPSMs === 'Aceptado'
+  ).length;
+  const enScoop = liberaciones.filter(l => l.aceptadoScoop && l.aceptadoScoop !== '').length;
+  const sinPoliza = liberaciones.filter(l => l.conPoliza !== 'Si').length;
+
+  // Sheet 2 — Programación
+  const enEspera = programacion.filter(p => p.estatusCalidad === 'En espera de correcciones').length;
+
+  // Sheet 5 — Equipos
+  const equiposCrit = equipos.filter(e => {
     const d = parseD(e.proximoMant);
     return d && daysBetween(TODAY, d) <= 30;
   }).length;
 
   const cards = [
     { label: 'NCs Abiertas', value: totalAbiertos, sub: 'hallazgos sin cierre', cls: totalAbiertos > 0 ? 'c-danger' : 'c-accent' },
-    { label: 'Prom. días abierto', value: promDias + 'd', sub: 'proyectos con NC activa', cls: promDias > 60 ? 'c-danger' : promDias > 30 ? 'c-warn' : 'c-accent' },
-    { label: 'Pendiente visita', value: pendVisita, sub: 'sin calidad agendada', cls: pendVisita > 0 ? 'c-warn' : 'c-accent' },
+    { label: 'Prom. días abierto', value: promDias + 'd', sub: 'en proyectos con NC', cls: promDias > 60 ? 'c-danger' : promDias > 30 ? 'c-warn' : 'c-accent' },
+    { label: 'Listos para O&M', value: listos + '/' + totalSitios, sub: '3/3 aprobaciones OK', cls: listos === totalSitios ? 'c-accent' : 'c-warn' },
     { label: 'En espera correc.', value: enEspera, sub: 'bloqueando liberación', cls: enEspera > 0 ? 'c-danger' : 'c-accent' },
-    { label: 'Sin póliza servicio', value: sinPoliza, sub: 'proyectos sin cobertura', cls: sinPoliza > 0 ? 'c-danger' : 'c-gray' },
+    { label: 'Sin póliza servicio', value: sinPoliza, sub: 'sitios sin cobertura', cls: sinPoliza > 0 ? 'c-danger' : 'c-gray' },
     { label: 'Calibración próxima', value: equiposCrit, sub: 'equipos ≤30 días', cls: equiposCrit > 0 ? 'c-warn' : 'c-gray' },
   ];
 
@@ -1847,18 +1994,107 @@ function renderCalidadKPIs() {
 
 function renderCalidadFunnel() {
   const prog = rawCalidad.programacion;
+  // Valores reales del campo "Estatus ante calidad" de Sheet 2
   const steps = [
-    { label: 'Pendiente', color: 'var(--text3)', count: prog.filter(p => p.estatusCalidad === 'Pendiente').length },
+    { label: 'Etapa temprana', color: 'var(--text3)', count: prog.filter(p => p.estatusCalidad === 'En etapa temprana de construcción').length },
     { label: 'Próx. visitar', color: 'var(--warn)', count: prog.filter(p => p.estatusCalidad === 'Próximo a visitar').length },
     { label: 'En correcciones', color: 'var(--danger)', count: prog.filter(p => p.estatusCalidad === 'En espera de correcciones').length },
     { label: 'Reporte enviado', color: 'var(--info)', count: rawCalidad.calendario.filter(c => c.estatusVisita === 'Reporte enviado').length },
-    { label: 'Aceptado', color: 'var(--accent)', count: prog.filter(p => p.estatusCalidad === 'Aceptado').length },
+    { label: 'Liberado', color: 'var(--accent)', count: prog.filter(p => p.estatusCalidad === 'Liberado').length },
   ];
   document.getElementById('calidadFunnel').innerHTML = steps.map(s => `
     <div class="funnel-step">
       <div class="funnel-num" style="color:${s.color}">${s.count}</div>
       <div class="funnel-label">${s.label}</div>
     </div>`).join('');
+}
+
+// ── Sheet 1: Gate de aprobaciones ────────────────────────────────
+function renderAprobaciones() {
+  const lib = rawCalidad.liberaciones;
+  document.getElementById('aprobTotalSitios').textContent = lib.length + ' sitios';
+
+  const cols = [
+    {
+      title: 'Calidad', field: 'aprobCalidad',
+      vals: ['Aceptado','No revisado','Rechazado'],
+      colors: { 'Aceptado': '#00AA85', 'No revisado': '#f5a623', 'Rechazado': '#ff4757', '': '#5a6577' },
+    },
+    {
+      title: 'Monitoreo', field: 'aprobMonitoreo',
+      vals: ['Aceptado','En revisión'],
+      colors: { 'Aceptado': '#00AA85', 'En revisión': '#f5a623', '': '#5a6577' },
+    },
+    {
+      title: 'PSMs', field: 'aprobPSMs',
+      vals: ['Aceptado','En revisión'],
+      colors: { 'Aceptado': '#00AA85', 'En revisión': '#f5a623', '': '#5a6577' },
+    },
+    {
+      title: 'Póliza', field: 'conPoliza',
+      vals: ['Si','No'],
+      colors: { 'Si': '#00AA85', 'No': '#ff4757', '': '#5a6577' },
+    },
+    {
+      title: 'En Scoop', field: 'aceptadoScoop',
+      custom: true,
+      vals: ['Registrado','Pendiente'],
+      colors: { 'Registrado': '#00AA85', 'Pendiente': '#5a6577' },
+    },
+  ];
+
+  document.getElementById('calidadAprobaciones').innerHTML = cols.map(col => {
+    let rows;
+    if (col.custom) {
+      const reg = lib.filter(l => l.aceptadoScoop && l.aceptadoScoop !== '').length;
+      const pend = lib.length - reg;
+      rows = [
+        { label: 'Registrado', count: reg, color: col.colors['Registrado'] },
+        { label: 'Pendiente', count: pend, color: col.colors['Pendiente'] },
+      ];
+    } else {
+      const counts = {};
+      lib.forEach(l => {
+        const v = l[col.field] || '';
+        counts[v] = (counts[v] || 0) + 1;
+      });
+      rows = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([v, n]) => ({
+        label: v || 'Sin dato', count: n, color: col.colors[v] || '#5a6577',
+      }));
+    }
+    return `<div class="aprob-col">
+      <div class="aprob-col-title">${col.title}</div>
+      ${rows.map(r => `<div class="aprob-row">
+        <div class="aprob-dot" style="background:${r.color}"></div>
+        <span>${r.label}</span>
+        <span class="aprob-count" style="color:${r.color}">${r.count}</span>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ── Sheet 2: Presupuesto por PM ───────────────────────────────────
+function renderPresupuesto() {
+  const prog = rawCalidad.programacion;
+  const byPM = {};
+  prog.forEach(p => {
+    if (!p.pm) return;
+    byPM[p.pm] = (byPM[p.pm] || 0) + (p.totalMendel || 0);
+  });
+  const sorted = Object.entries(byPM).sort((a, b) => b[1] - a[1]);
+  const max = Math.max(1, ...sorted.map(e => e[1]));
+  const total = sorted.reduce((s, e) => s + e[1], 0);
+  document.getElementById('presupuestoTotal').textContent = '$' + total.toLocaleString('es-MX') + ' total';
+  document.getElementById('calidadPresupuesto').innerHTML = sorted.map(([pm, val]) => `
+    <li class="hbar-item">
+      <div class="hbar-label">
+        <span>${pm.trim()}</span>
+        <span style="color:var(--accent);font-weight:600">$${val.toLocaleString('es-MX')}</span>
+      </div>
+      <div class="hbar-track">
+        <div class="hbar-fill" style="width:${(val/max*100).toFixed(0)}%;background:var(--accent)"></div>
+      </div>
+    </li>`).join('') || '<li style="color:var(--text3);font-size:11px;padding:8px 0">Sin datos de presupuesto</li>';
 }
 
 function renderCalidadHbar() {
@@ -1933,17 +2169,23 @@ function renderCalidadTable() {
     return 'badge-gray';
   };
 
+  const dotFor = v => {
+    const c = v === 'Aceptado' ? '#00AA85' : v === 'En revisión' ? '#f5a623' : v === 'Rechazado' ? '#ff4757' : '#5a6577';
+    return `<span title="${v || 'Sin dato'}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:2px"></span>`;
+  };
+
   tbody.innerHTML = rows.map(r => `
     <tr>
       <td style="color:var(--accent);font-weight:500">${r.proj}</td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${r.proyecto}">${r.proyecto}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis" title="${r.proyecto}">${r.proyecto}</td>
       <td>${r.pm || '—'}</td>
       <td>${r.supervisor || '—'}</td>
-      <td style="color:${r.abiertos > 0 ? 'var(--danger)' : 'var(--accent)'};font-weight:600">${r.abiertos}</td>
-      <td>${r.total}</td>
+      <td style="color:${r.abiertos > 0 ? 'var(--danger)' : 'var(--accent)'};font-weight:600">${r.abiertos}/${r.total}</td>
       <td style="color:${r.diasAbierto > 60 ? 'var(--danger)' : r.diasAbierto > 30 ? 'var(--warn)' : 'var(--text)'}">${r.abiertos > 0 ? r.diasAbierto + 'd' : '—'}</td>
       <td><span class="badge ${estatusCls(r.estatusCalidad)}">${r.estatusCalidad || '—'}</span></td>
+      <td title="Calidad / Monitoreo / PSMs">${dotFor(r.aprobCalidad)}${dotFor(r.aprobMonitoreo)}${dotFor(r.aprobPSMs)}</td>
       <td>${r.conPoliza === 'Si' ? '<span class="badge badge-green">Si</span>' : '<span class="badge badge-red">No</span>'}</td>
+      <td>${r.aceptadoScoop ? '<span class="badge badge-green">✓</span>' : '<span class="badge badge-gray">—</span>'}</td>
       <td>${r.abiertos > 5 ? '<span class="badge badge-red">Crítico</span>' : r.abiertos > 0 ? '<span class="badge badge-yellow">Atención</span>' : '<span class="badge badge-green">OK</span>'}</td>
     </tr>`).join('');
 

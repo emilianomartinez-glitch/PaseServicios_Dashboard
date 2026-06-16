@@ -1,0 +1,317 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "enlight-calidad",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "45aced60-ff95-486e-b4c4-a1ca7e9cc323",
+      "name": "Webhook - GET Calidad",
+      "webhookId": "0e29c5df-13b2-4e96-9b79-1eea862d66c7"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ",
+          "mode": "list",
+          "cachedResultName": "Control general de calidad ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Control de liberaciones y pase de cuentas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        -160
+      ],
+      "id": "f482baa7-5db6-4410-92d8-cf0b38238935",
+      "name": "Calidad - Control de liberaciones y pase de cuentas",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "af48hEP1PbQpWRo9",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ",
+          "mode": "list",
+          "cachedResultName": "Control general de calidad ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 371507397,
+          "mode": "list",
+          "cachedResultName": "Control de programación y presupuestos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ/edit#gid=371507397"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        240,
+        64
+      ],
+      "id": "a5611fec-c4ed-4115-87e9-436df6ade573",
+      "name": "Calidad - Control de programación y presupuestos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "af48hEP1PbQpWRo9",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ",
+          "mode": "list",
+          "cachedResultName": "Control general de calidad ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1411945244,
+          "mode": "list",
+          "cachedResultName": "Calendario",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ/edit#gid=1411945244"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        304
+      ],
+      "id": "0f45d1fa-5c5d-4710-a42d-46ee03609905",
+      "name": "Calidad - Calendario",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "af48hEP1PbQpWRo9",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ",
+          "mode": "list",
+          "cachedResultName": "Control general de calidad ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1601586508,
+          "mode": "list",
+          "cachedResultName": "Control de hallazgos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ/edit#gid=1601586508"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        528
+      ],
+      "id": "6e90d8a8-d5ae-4f5a-91ca-d1c03cae4958",
+      "name": "Calidad - Control de hallazgos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "af48hEP1PbQpWRo9",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ",
+          "mode": "list",
+          "cachedResultName": "Control general de calidad ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1806628719,
+          "mode": "list",
+          "cachedResultName": "Control de equipos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1a1aKQSfkVfasu0pKTBMwKqDjSFVGFFqFF_EC8Yr2KjQ/edit#gid=1806628719"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        752
+      ],
+      "id": "16bb362b-7a0c-4f43-85d9-36d10745deef",
+      "name": "Calidad - Control de equipos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "af48hEP1PbQpWRo9",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        528,
+        240
+      ],
+      "id": "ddf42490-e23f-4a89-9d68-0796c26830de",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        784,
+        48
+      ],
+      "id": "e80fedea-2bd5-4516-bdfc-6f02abd6a810",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook - GET Calidad": {
+      "main": [
+        [
+          {
+            "node": "Calidad - Control de liberaciones y pase de cuentas",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Calidad - Control de programación y presupuestos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Calidad - Calendario",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Calidad - Control de hallazgos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Calidad - Control de equipos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calidad - Control de liberaciones y pase de cuentas": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calidad - Control de programación y presupuestos": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Calidad - Calendario": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Calidad - Control de hallazgos": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Calidad - Control de equipos": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d07ceca5e978fedf0de8319073f060d445fc5f9ac86873adfc6d77f9052a35c4"
+  }
+}
