@@ -1851,6 +1851,32 @@ let chartCalidad = null;
 let chartPolizas = null;
 let chartSuperv = null;
 
+// ─── MINUTA KEY PARSER ───────────────────────────────────────────
+// Handles all date formats seen in the real sheet:
+//   "Minuta 17 de febrero de 2026"  → words with "de year"
+//   "Minuta 3 de Abril 2026"        → words without "de" before year
+//   "Minuta 09/04/2026"             → DD/MM/YYYY
+//   "Minuta 06/05/26"               → DD/MM/YY
+//   "Minuta de 01-06-2026"          → DD-MM-YYYY
+function parseMinutaKey(rawKey) {
+  const k = rawKey.trim();
+  if (!/^Minuta\b/i.test(k)) return null;
+  const rest = k.replace(/^Minuta\s+de\s+/i, '').replace(/^Minuta\s+/i, '').trim();
+  const MESES = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,
+                 julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+  let m;
+  // DD-MM-YYYY
+  m = rest.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  // DD/MM/YYYY or DD/MM/YY
+  m = rest.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m) { const y = +m[3] < 100 ? +m[3]+2000 : +m[3]; return new Date(y, +m[2]-1, +m[1]); }
+  // DD de [mes] [de] YYYY  (e.g. "17 de febrero de 2026" or "3 de Abril 2026")
+  m = rest.match(/^(\d{1,2})\s+de\s+([a-záéíóúü]+)\s+(?:de\s+)?(\d{4})$/i);
+  if (m) { const mo = MESES[m[2].toLowerCase()]; if (mo) return new Date(+m[3], mo-1, +m[1]); }
+  return null;
+}
+
 // ─── PARSE CALIDAD PAYLOAD ───────────────────────────────────────
 // El webhook devuelve un array plano de N registros con 5 schemas distintos.
 // Los detectamos por campos únicos de cada hoja y normalizamos a aliases limpios.
@@ -1948,14 +1974,10 @@ function parseCalidadPayload(raw) {
         totalViaticos: parseFloat(r['Total viaticos\n(Comida - Caseta - Gasolina)']) || 0,
       });
     } else if ('Aprobación de calidad' in r || 'Sitio' in r) {
-      // Extract timestamped meeting notes: "Minuta de DD-MM-YYYY"
-      const minutaRe = /^Minuta de (\d{2}-\d{2}-\d{4})$/i;
+      // Extract all "Minuta [date]" columns — any format
       const minutaHistory = Object.entries(r)
-        .filter(([k]) => minutaRe.test(k.trim()))
-        .map(([k, v]) => {
-          const [dd, mm, yyyy] = k.trim().match(minutaRe)[1].split('-');
-          return { date: new Date(+yyyy, +mm - 1, +dd), note: (v || '').trim() };
-        })
+        .map(([k, v]) => ({ date: parseMinutaKey(k), note: (v || '').trim() }))
+        .filter(m => m.date !== null)
         .sort((a, b) => b.date - a.date);
       const lastActive = minutaHistory.find(m => m.note !== '');
       const lastMinutaDate = lastActive ? lastActive.date : null;
