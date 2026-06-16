@@ -316,6 +316,101 @@ footer {
 
 /* Table count */
 .tbl-count { font-size: 10px; color: var(--text3); font-weight: 400; }
+
+/* ═══════════ TAB BAR ═══════════ */
+.tab-bar {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border2);
+  margin-bottom: 0; padding: 0;
+}
+.tab-btn {
+  background: none; border: none; color: var(--text3);
+  font-family: 'Alexandria', sans-serif; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.6px; text-transform: uppercase;
+  padding: 10px 20px; cursor: pointer; position: relative;
+  transition: color 0.2s; white-space: nowrap;
+}
+.tab-btn::after {
+  content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+  height: 2px; background: var(--accent); transform: scaleX(0);
+  transition: transform 0.2s;
+}
+.tab-btn:hover { color: var(--text2); }
+.tab-btn.active { color: var(--accent); }
+.tab-btn.active::after { transform: scaleX(1); }
+.tab-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 8px; font-size: 9px;
+  font-weight: 700; margin-left: 6px; background: var(--danger);
+  color: #fff; vertical-align: middle;
+}
+
+/* ═══════════ FUNNEL (Calidad) ═══════════ */
+.funnel-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+  margin-bottom: 14px;
+}
+.funnel-step {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 10px 8px; text-align: center;
+  position: relative;
+}
+.funnel-step::after {
+  content: '›'; position: absolute; right: -10px; top: 50%;
+  transform: translateY(-50%); color: var(--text3); font-size: 16px;
+  z-index: 1;
+}
+.funnel-step:last-child::after { display: none; }
+.funnel-num {
+  font-family: 'Alexandria', sans-serif; font-size: 22px; font-weight: 700;
+  line-height: 1; margin-bottom: 4px;
+}
+.funnel-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.3px; }
+
+/* ═══════════ ZONE GRID (Mantenimientos) ═══════════ */
+.zone-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  margin-bottom: 14px;
+}
+.zone-card {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+}
+.zone-name {
+  font-size: 10px; color: var(--text3); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 4px;
+}
+.zone-val {
+  font-family: 'Alexandria', sans-serif; font-size: 20px; font-weight: 700;
+  color: var(--text);
+}
+.zone-sub { font-size: 9px; color: var(--text3); margin-top: 2px; }
+.zone-bar { height: 3px; background: var(--bg3); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.zone-bar-fill { height: 100%; border-radius: 2px; }
+
+/* ═══════════ POLIZA BADGES ═══════════ */
+.badge-vigente { background: rgba(0,170,133,0.15); color: #00d4a4; }
+.badge-proxima { background: rgba(245,166,35,0.15); color: #f5c542; }
+.badge-vencida { background: rgba(255,71,87,0.15); color: #ff6b7a; }
+
+/* ═══════════ CHART DONUT ═══════════ */
+.donut-wrap { position: relative; height: 200px; max-width: 200px; margin: 0 auto; }
+
+/* ═══════════ HORIZONTAL BAR ═══════════ */
+.hbar-list { list-style: none; padding: 0; }
+.hbar-item { margin-bottom: 8px; }
+.hbar-label { font-size: 10px; color: var(--text2); margin-bottom: 3px; display: flex; justify-content: space-between; }
+.hbar-track { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.hbar-fill { height: 100%; border-radius: 3px; }
+
+@media (max-width: 900px) {
+  .funnel-grid { grid-template-columns: repeat(3, 1fr); }
+  .zone-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .funnel-grid { grid-template-columns: repeat(2, 1fr); }
+  .zone-grid { grid-template-columns: repeat(2, 1fr); }
+  .tab-btn { padding: 8px 12px; font-size: 10px; }
+}
 </style>
 </head>
 <body>
@@ -335,6 +430,16 @@ footer {
       <div class="refresh-dot" id="refreshDot"></div>
     </div>
   </header>
+
+  <!-- ═══════════ TAB BAR ═══════════ -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('servicios')" id="tab-servicios">Servicios</button>
+    <button class="tab-btn" onclick="switchTab('calidad')" id="tab-calidad">Calidad <span class="tab-badge" id="badge-calidad" style="display:none">0</span></button>
+    <button class="tab-btn" onclick="switchTab('mantenimientos')" id="tab-mantenimientos">Mantenimientos <span class="tab-badge" id="badge-mant" style="display:none">0</span></button>
+  </div>
+
+  <!-- ═══════════ TAB: SERVICIOS ═══════════ -->
+  <div id="tab-panel-servicios">
 
   <!-- ═══════════ FILTERS ═══════════ -->
   <div class="filter-bar" id="filterBar">
@@ -432,6 +537,179 @@ footer {
     <div class="spinner"></div>
     <div style="font-size:11px;">Conectando con n8n…</div>
   </div>
+
+  </div><!-- /tab-panel-servicios -->
+
+  <!-- ═══════════ TAB: CALIDAD ═══════════ -->
+  <div id="tab-panel-calidad" style="display:none;">
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>PM</label>
+        <select id="cPM" onchange="applyCalidadFilters()"><option value="">Todos</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Estatus Calidad</label>
+        <select id="cEstatus" onchange="applyCalidadFilters()"><option value="">Todos</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Supervisor</label>
+        <select id="cSupervisor" onchange="applyCalidadFilters()"><option value="">Todos</option></select>
+      </div>
+      <button class="btn-clear" onclick="clearCalidadFilters()">Limpiar filtros</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-overlay" id="loadingCalidad">
+      <div class="spinner"></div>
+      <div style="font-size:11px;">Cargando datos de Calidad…</div>
+    </div>
+
+    <div id="mainCalidad" style="display:none;">
+      <!-- KPIs -->
+      <div class="kpi-grid" id="kpiCalidad"></div>
+
+      <!-- Funnel + Hallazgos Chart -->
+      <div class="section-label">Pipeline de calidad</div>
+      <div class="funnel-grid" id="calidadFunnel"></div>
+
+      <div class="dual-grid" style="margin-bottom:16px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Top hallazgos abiertos por proyecto</div>
+          </div>
+          <div class="card-body">
+            <ul class="hbar-list" id="calidadHbarList"></ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Próximas visitas — 12 semanas</div>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap"><canvas id="chartCalidadTimeline"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla hallazgos -->
+      <div class="section-label">Detalle de hallazgos <span class="tbl-count" id="calidadCount"></span></div>
+      <div class="card full-width" style="margin-bottom:16px;">
+        <div class="table-scroll">
+          <table class="pipeline" id="calidadTable">
+            <thead><tr>
+              <th data-sort="proj">PROJ</th>
+              <th data-sort="proyecto">Proyecto</th>
+              <th data-sort="pm">PM</th>
+              <th data-sort="supervisor">Supervisor</th>
+              <th data-sort="abiertos">NCs Abiertos</th>
+              <th data-sort="total">Total NCs</th>
+              <th data-sort="diasAbierto">Días Abierto</th>
+              <th data-sort="estatusCalidad">Estatus Calidad</th>
+              <th data-sort="conPoliza">Póliza</th>
+              <th>Alerta</th>
+            </tr></thead>
+            <tbody id="calidadBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Alertas equipos -->
+      <div class="section-label">Equipos — próxima calibración / mantenimiento</div>
+      <div class="anomaly-grid" id="equiposGrid"></div>
+    </div>
+  </div><!-- /tab-panel-calidad -->
+
+  <!-- ═══════════ TAB: MANTENIMIENTOS ═══════════ -->
+  <div id="tab-panel-mantenimientos" style="display:none;">
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Zona</label>
+        <select id="mZona" onchange="applyMantFilters()"><option value="">Todas</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Supervisor</label>
+        <select id="mSupervisor" onchange="applyMantFilters()"><option value="">Todos</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Estatus Póliza</label>
+        <select id="mPoliza" onchange="applyMantFilters()">
+          <option value="">Todas</option>
+          <option value="Vigente">Vigente</option>
+          <option value="Próxima a vencer">Próxima a vencer</option>
+          <option value="Vencida">Vencida</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Estatus Proyecto</label>
+        <select id="mEstatusProj" onchange="applyMantFilters()"><option value="">Todos</option></select>
+      </div>
+      <button class="btn-clear" onclick="clearMantFilters()">Limpiar filtros</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-overlay" id="loadingMant">
+      <div class="spinner"></div>
+      <div style="font-size:11px;">Cargando datos de Mantenimientos…</div>
+    </div>
+
+    <div id="mainMant" style="display:none;">
+      <!-- KPIs -->
+      <div class="kpi-grid" id="kpiMant"></div>
+
+      <!-- Zona grid + Donut pólizas -->
+      <div class="section-label">Distribución por zona y estado de pólizas</div>
+      <div class="dual-grid" style="margin-bottom:16px;">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Cumplimiento por zona</div></div>
+          <div class="card-body">
+            <div class="zone-grid" id="mantZonaGrid"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Estado de pólizas</div></div>
+          <div class="card-body" style="display:flex;align-items:center;gap:20px;">
+            <div class="donut-wrap" style="flex-shrink:0;"><canvas id="chartPolizas"></canvas></div>
+            <div id="polizaLegend" style="font-size:10px;line-height:2;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline supervisores -->
+      <div class="section-label">Carga por supervisor — 2026</div>
+      <div class="card full-width" style="margin-bottom:16px;">
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="chartSupervisores"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Tabla mantenimientos -->
+      <div class="section-label">Programación preventiva <span class="tbl-count" id="mantCount"></span></div>
+      <div class="card full-width" style="margin-bottom:16px;">
+        <div class="table-scroll">
+          <table class="pipeline" id="mantTable">
+            <thead><tr>
+              <th data-sort="nombreSitio">Sitio</th>
+              <th data-sort="zona">Zona</th>
+              <th data-sort="supervisor">Supervisor</th>
+              <th data-sort="capacidadKWp">kWp</th>
+              <th data-sort="mesProgr">Mes Prog.</th>
+              <th data-sort="fechaProgramada">Fecha Prog.</th>
+              <th data-sort="fechaRealFin">Fecha Real</th>
+              <th data-sort="duracion">Días</th>
+              <th>Reporte</th>
+              <th>Póliza</th>
+              <th>Cumplimiento</th>
+            </tr></thead>
+            <tbody id="mantBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Alertas mantenimientos -->
+      <div class="section-label">Alertas operativas</div>
+      <div class="anomaly-grid" id="mantAnomalyGrid"></div>
+    </div>
+  </div><!-- /tab-panel-mantenimientos -->
 
   <footer>
     ENLIGHT · DASHBOARD SERVICIOS · OPERATIVO
@@ -1185,7 +1463,7 @@ function renderPipelineTable() {
 
     const expanded = expandedRows.has(p.proj);
     html += `<tr class="expandable" onclick="toggleRow('${p.proj}')">
-      <td style="font-weight:500;color:var(--accent)">${p.proj}</td>
+      <td style="font-weight:500;color:var(--accent)">${p.proj}${getCrossTabBadges(p.proj)}</td>
       <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis" title="${p.sitio}">${p.sitio}</td>
       <td>${p.cuenta}</td>
       <td>${p.pm}</td>
@@ -1353,6 +1631,657 @@ function toggleAnomalyFilter(id, projsStr) {
 // ─── INIT ────────────────────────────────────────────────────────
 fetchData();
 setInterval(fetchData, REFRESH_MS);
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB SYSTEM
+// ═══════════════════════════════════════════════════════════════════
+let activeTab = 'servicios';
+
+function switchTab(tab) {
+  activeTab = tab;
+  ['servicios', 'calidad', 'mantenimientos'].forEach(t => {
+    document.getElementById('tab-panel-' + t).style.display = t === tab ? '' : 'none';
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'calidad' && !rawCalidad) fetchCalidad();
+  if (tab === 'mantenimientos' && !rawMant) fetchMantenimientos();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MOCK DATA — replace with real n8n webhook data when flows are ready
+// ═══════════════════════════════════════════════════════════════════
+const API_URL_CALIDAD        = 'https://egenlight.app.n8n.cloud/webhook/enlight-calidad';
+const API_URL_MANTENIMIENTOS = 'https://egenlight.app.n8n.cloud/webhook/enlight-mantenimientos';
+
+const MOCK_CALIDAD = {
+  hallazgos: [
+    { nombreProyecto: 'Bio Pappel Chiapas', projInstalaciones: 'PROJ-536', projOM: 803, pm: 'Julio Martinez', supervisor: 'Rubén García', totalHallazgos: 6, abiertos: 2, cerrados: 4, diasAbierto: 45, fechaEnvioReporte: '2025-10-03' },
+    { nombreProyecto: 'Boehringer STO', projInstalaciones: 'PROJ-217', projOM: null, pm: 'Mario Iturbe', supervisor: 'Santiago Medina', totalHallazgos: 5, abiertos: 3, cerrados: 2, diasAbierto: 256, fechaEnvioReporte: '2024-10-03' },
+    { nombreProyecto: 'Grupo Diestra Villahermosa', projInstalaciones: 'PROJ-630', projOM: null, pm: 'Mario Iturbe', supervisor: 'Gustavo Chavez', totalHallazgos: 4, abiertos: 0, cerrados: 4, diasAbierto: 0, fechaEnvioReporte: '2026-01-15' },
+    { nombreProyecto: 'DICOIOSA Naucalpan', projInstalaciones: 'PROJ-727', projOM: null, pm: 'Julio Martinez', supervisor: 'Rubén García', totalHallazgos: 8, abiertos: 5, cerrados: 3, diasAbierto: 78, fechaEnvioReporte: '2025-12-01' },
+    { nombreProyecto: 'Bio Pappel Guadalajara', projInstalaciones: 'PROJ-534', projOM: 801, pm: 'Julio Martinez', supervisor: 'Ángel Corona', totalHallazgos: 3, abiertos: 1, cerrados: 2, diasAbierto: 30, fechaEnvioReporte: '2026-02-15' },
+  ],
+  programacion: [
+    { proj: 'PROJ-630', proyecto: 'Grupo Diestra Villahermosa', cuenta: 'GRUPO DIESTRA', pm: 'Mario Iturbe', supervisor: 'Gustavo Chavez', visitaCalidad: '2026-02-10', estatusCalidad: 'Aceptado', conPoliza: 'Si' },
+    { proj: 'PROJ-640', proyecto: 'Grupo Diestra STO Villahermosa', cuenta: 'GRUPO DIESTRA', pm: 'Mario Iturbe', supervisor: 'Gustavo Chavez', visitaCalidad: null, estatusCalidad: 'Próximo a visitar', conPoliza: 'No' },
+    { proj: 'PROJ-536', proyecto: 'Bio Pappel Chiapas', cuenta: 'BIO PAPPEL', pm: 'Julio Martinez', supervisor: 'Rubén García', visitaCalidad: '2025-10-03', estatusCalidad: 'En espera de correcciones', conPoliza: 'Si' },
+    { proj: 'PROJ-534', proyecto: 'Bio Pappel Guadalajara', cuenta: 'BIO PAPPEL', pm: 'Julio Martinez', supervisor: 'Ángel Corona', visitaCalidad: '2026-02-15', estatusCalidad: 'Aceptado', conPoliza: 'Si' },
+    { proj: 'PROJ-727', proyecto: 'DICOIOSA Naucalpan', cuenta: 'DICOIOSA', pm: 'Julio Martinez', supervisor: 'Rubén García', visitaCalidad: '2025-12-01', estatusCalidad: 'En espera de correcciones', conPoliza: 'No' },
+    { proj: 'PROJ-217', proyecto: 'Boehringer STO', cuenta: 'BOEHRINGER', pm: 'Mario Iturbe', supervisor: 'Santiago Medina', visitaCalidad: null, estatusCalidad: 'Pendiente', conPoliza: 'No' },
+  ],
+  calendario: [
+    { proyecto: 'SFV Legrand Querétaro', projInstalaciones: 'PROJ-628', integrante: 'Rubén García', fechaEntrada: '2026-06-18', fechaSalida: '2026-06-19', tipoVisita: 'Post-commissioning', estatusVisita: 'Programada', reserva: 'Confirmada', estatusAceptacion: 'Pendiente' },
+    { proyecto: 'SFV Waldaschaff León', projInstalaciones: 'PROJ-238', integrante: 'Santiago Medina', fechaEntrada: '2026-06-23', fechaSalida: '2026-06-24', tipoVisita: 'Post-commissioning', estatusVisita: 'Programada', reserva: 'Confirmada', estatusAceptacion: 'Pendiente' },
+    { proyecto: 'Bio Pappel Chiapas', projInstalaciones: 'PROJ-536', integrante: 'Gustavo Chavez', fechaEntrada: '2026-07-02', fechaSalida: '2026-07-03', tipoVisita: 'Seguimiento NC', estatusVisita: 'Programada', reserva: 'Pendiente', estatusAceptacion: 'Pendiente' },
+    { proyecto: 'DICOIOSA Naucalpan', projInstalaciones: 'PROJ-727', integrante: 'Rubén García', fechaEntrada: '2026-07-10', fechaSalida: '2026-07-11', tipoVisita: 'Seguimiento NC', estatusVisita: 'Reporte enviado', reserva: 'Confirmada', estatusAceptacion: 'En espera de respuesta de NC' },
+    { proyecto: 'Forvia Puebla', projInstalaciones: 'PROJ-205', integrante: 'Melissa Solorio', fechaEntrada: '2026-07-21', fechaSalida: '2026-07-22', tipoVisita: 'Post-commissioning', estatusVisita: 'Programada', reserva: 'Pendiente', estatusAceptacion: 'Pendiente' },
+  ],
+  equipos: [
+    { equipo: 'Dron DJI Mavic 3 Enterprise', serie: '1581F7K3C25B800D29UU', garantia: 'Si', finGarantia: '2027-06-01', frecuenciaCalib: 'Semestral', proximoMant: '2026-12-01' },
+    { equipo: 'Megóhmetro digital AEMC 6526', serie: 'Pendiente', garantia: 'Si', finGarantia: '2027-05-28', frecuenciaCalib: 'Anual', proximoMant: '2027-05-28' },
+    { equipo: 'Analizador de redes Fluke 435-II', serie: 'C320R00123', garantia: 'No', finGarantia: null, frecuenciaCalib: 'Semestral', proximoMant: '2026-07-15' },
+    { equipo: 'Multímetro Fluke 87V', serie: 'AB1234567', garantia: 'Si', finGarantia: '2025-12-01', frecuenciaCalib: 'Anual', proximoMant: '2026-06-20' },
+  ],
+};
+
+const MOCK_MANT = {
+  mantenimientos: [
+    { nombreSitio: 'Waldaschaff Automotive | León SFV', projInstalaciones: 238, projOM: 708, capacidadKWp: 624.8, zona: 'Centro', supervisor: 'Santiago Medina', fechaPuestaMarcha: '2024-02-25', estatusProyecto: 'Encendido', estatusPase: 'Con pase de cuenta', estatusPoliza: 'Vigente', inicioPoliza: '2026-02-27', finPoliza: '2027-02-26', mesProgr: '2026-01-01', fechaProgramada: '2026-01-13', fechaRealInicio: '2026-01-13', fechaRealFin: '2026-01-16', duracion: 3, fechaEntregaReporte: '2026-01-19', ejecutadoMes: 'Si', ejecutadoFecha: 'Si' },
+    { nombreSitio: 'Legrand | BTICINO Querétaro', projInstalaciones: 210, projOM: 738, capacidadKWp: 255.94, zona: 'Centro', supervisor: 'Gustavo Chavez', fechaPuestaMarcha: '2024-10-09', estatusProyecto: 'Encendido', estatusPase: 'Con pase de cuenta', estatusPoliza: 'Vigente', inicioPoliza: '2025-10-10', finPoliza: '2026-10-09', mesProgr: '2026-03-01', fechaProgramada: '2026-03-14', fechaRealInicio: '2026-03-14', fechaRealFin: '2026-03-17', duracion: 3, fechaEntregaReporte: null, ejecutadoMes: 'Si', ejecutadoFecha: 'Si' },
+    { nombreSitio: 'Forvia | Puebla SFV', projInstalaciones: 205, projOM: 492, capacidadKWp: 180.5, zona: 'Centro', supervisor: 'Melissa Solorio', fechaPuestaMarcha: '2025-05-21', estatusProyecto: 'Encendido', estatusPase: 'Sin inspección de calidad', estatusPoliza: 'Próxima a vencer', inicioPoliza: '2025-06-01', finPoliza: '2026-06-30', mesProgr: '2026-06-01', fechaProgramada: '2026-06-20', fechaRealInicio: null, fechaRealFin: null, duracion: 0, fechaEntregaReporte: null, ejecutadoMes: null, ejecutadoFecha: null },
+    { nombreSitio: 'Grupo Diestra | Marriott Aguascalientes', projInstalaciones: 628, projOM: 750, capacidadKWp: 320.0, zona: 'Occidente', supervisor: 'Ángel Corona', fechaPuestaMarcha: '2024-08-15', estatusProyecto: 'Encendido', estatusPase: 'Con pase de cuenta', estatusPoliza: 'Vencida', inicioPoliza: '2025-04-08', finPoliza: '2026-04-07', mesProgr: '2026-04-01', fechaProgramada: '2026-04-10', fechaRealInicio: '2026-04-10', fechaRealFin: '2026-04-12', duracion: 2, fechaEntregaReporte: null, ejecutadoMes: 'Si', ejecutadoFecha: 'Si' },
+    { nombreSitio: 'Bio Pappel | Chiapas SFV', projInstalaciones: 536, projOM: 803, capacidadKWp: 450.0, zona: 'Sur', supervisor: 'Sebastián Castillo', fechaPuestaMarcha: '2025-08-01', estatusProyecto: 'Adecuaciones de NC', estatusPase: 'Sin pase de cuenta', estatusPoliza: 'Próxima a vencer', inicioPoliza: '2025-09-01', finPoliza: '2026-09-01', mesProgr: '2026-06-01', fechaProgramada: '2026-06-25', fechaRealInicio: null, fechaRealFin: null, duracion: 0, fechaEntregaReporte: null, ejecutadoMes: null, ejecutadoFecha: null },
+    { nombreSitio: 'DICOIOSA | Naucalpan Planta 2', projInstalaciones: 727, projOM: null, capacidadKWp: 290.0, zona: 'Centro', supervisor: 'Rubén García', fechaPuestaMarcha: '2025-11-01', estatusProyecto: 'Encendido', estatusPase: 'Sin pase de cuenta', estatusPoliza: 'Vigente', inicioPoliza: '2026-01-01', finPoliza: '2027-01-01', mesProgr: '2026-07-01', fechaProgramada: '2026-07-08', fechaRealInicio: null, fechaRealFin: null, duracion: 0, fechaEntregaReporte: null, ejecutadoMes: null, ejecutadoFecha: null },
+    { nombreSitio: 'Boehringer | Ingélheim SFV Norte', projInstalaciones: 126, projOM: 6, capacidadKWp: 210.0, zona: 'Norte', supervisor: 'Santiago Medina', fechaPuestaMarcha: '2023-11-20', estatusProyecto: 'Encendido', estatusPase: 'Con pase de cuenta', estatusPoliza: 'Vigente', inicioPoliza: '2025-12-01', finPoliza: '2026-12-01', mesProgr: '2026-05-01', fechaProgramada: '2026-05-06', fechaRealInicio: '2026-05-06', fechaRealFin: '2026-05-07', duracion: 1, fechaEntregaReporte: '2026-05-10', ejecutadoMes: 'Si', ejecutadoFecha: 'Si' },
+    { nombreSitio: 'Waldaschaff | Monterrey SFV', projInstalaciones: 302, projOM: 820, capacidadKWp: 390.0, zona: 'Norte', supervisor: 'Sebastián Castillo', fechaPuestaMarcha: '2024-06-10', estatusProyecto: 'Encendido', estatusPase: 'Con pase de cuenta', estatusPoliza: 'Vigente', inicioPoliza: '2026-01-01', finPoliza: '2027-01-01', mesProgr: '2026-06-01', fechaProgramada: '2026-06-12', fechaRealInicio: null, fechaRealFin: null, duracion: 0, fechaEntregaReporte: null, ejecutadoMes: null, ejecutadoFecha: null },
+  ],
+};
+
+// ─── STATE: CALIDAD & MANTENIMIENTOS ──────────────────────────────
+let rawCalidad = null;
+let rawMant = null;
+let calidadData = [];
+let mantData = [];
+let calidadSortState = { col: 'diasAbierto', asc: false };
+let mantSortState = { col: 'fechaProgramada', asc: true };
+let chartCalidad = null;
+let chartPolizas = null;
+let chartSuperv = null;
+
+// ─── FETCH CALIDAD ───────────────────────────────────────────────
+async function fetchCalidad() {
+  document.getElementById('loadingCalidad').style.display = 'flex';
+  document.getElementById('mainCalidad').style.display = 'none';
+  try {
+    let data;
+    try {
+      const resp = await fetch(API_URL_CALIDAD);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      data = await resp.json();
+    } catch (_) {
+      data = MOCK_CALIDAD; // fallback to mock
+    }
+    rawCalidad = data;
+    document.getElementById('loadingCalidad').style.display = 'none';
+    document.getElementById('mainCalidad').style.display = 'block';
+    applyCalidadFilters();
+  } catch (e) {
+    document.getElementById('loadingCalidad').innerHTML =
+      `<div style="color:var(--danger);font-size:12px;">Error al cargar Calidad: ${e.message}</div>`;
+  }
+}
+
+// ─── FETCH MANTENIMIENTOS ────────────────────────────────────────
+async function fetchMantenimientos() {
+  document.getElementById('loadingMant').style.display = 'flex';
+  document.getElementById('mainMant').style.display = 'none';
+  try {
+    let data;
+    try {
+      const resp = await fetch(API_URL_MANTENIMIENTOS);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      data = await resp.json();
+    } catch (_) {
+      data = MOCK_MANT;
+    }
+    rawMant = data;
+    document.getElementById('loadingMant').style.display = 'none';
+    document.getElementById('mainMant').style.display = 'block';
+    buildMantFilters();
+    applyMantFilters();
+  } catch (e) {
+    document.getElementById('loadingMant').innerHTML =
+      `<div style="color:var(--danger);font-size:12px;">Error al cargar Mantenimientos: ${e.message}</div>`;
+  }
+}
+
+// ─── CALIDAD FILTERS ─────────────────────────────────────────────
+function buildCalidadFilterOptions() {
+  if (!rawCalidad) return;
+  const pms = [...new Set(rawCalidad.programacion.map(p => p.pm).filter(Boolean))].sort();
+  const sups = [...new Set(rawCalidad.programacion.map(p => p.supervisor).filter(Boolean))].sort();
+  const ests = [...new Set(rawCalidad.programacion.map(p => p.estatusCalidad).filter(Boolean))].sort();
+
+  const fill = (id, vals, cur) => {
+    const el = document.getElementById(id); if (!el) return;
+    const first = id === 'cPM' ? 'Todos' : id === 'cSupervisor' ? 'Todos' : 'Todos';
+    el.innerHTML = `<option value="">${first}</option>` + vals.map(v => `<option${v === cur ? ' selected' : ''}>${v}</option>`).join('');
+  };
+  fill('cPM', pms, document.getElementById('cPM')?.value);
+  fill('cSupervisor', sups, document.getElementById('cSupervisor')?.value);
+  fill('cEstatus', ests, document.getElementById('cEstatus')?.value);
+}
+
+function applyCalidadFilters() {
+  if (!rawCalidad) { fetchCalidad(); return; }
+  buildCalidadFilterOptions();
+  const fPM = document.getElementById('cPM').value;
+  const fSup = document.getElementById('cSupervisor').value;
+  const fEst = document.getElementById('cEstatus').value;
+
+  // Merge programacion + hallazgos by proj
+  const hallMap = {};
+  rawCalidad.hallazgos.forEach(h => { hallMap[h.projInstalaciones] = h; });
+
+  let rows = rawCalidad.programacion.map(p => ({
+    ...p,
+    abiertos: hallMap[p.proj]?.abiertos ?? 0,
+    total: hallMap[p.proj]?.totalHallazgos ?? 0,
+    diasAbierto: hallMap[p.proj]?.diasAbierto ?? 0,
+  }));
+
+  if (fPM) rows = rows.filter(r => r.pm === fPM);
+  if (fSup) rows = rows.filter(r => r.supervisor === fSup);
+  if (fEst) rows = rows.filter(r => r.estatusCalidad === fEst);
+
+  calidadData = rows;
+  renderCalidad();
+}
+
+function clearCalidadFilters() {
+  ['cPM','cSupervisor','cEstatus'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  applyCalidadFilters();
+}
+
+// ─── RENDER CALIDAD ──────────────────────────────────────────────
+function renderCalidad() {
+  renderCalidadKPIs();
+  renderCalidadFunnel();
+  renderCalidadHbar();
+  renderCalidadTimeline();
+  renderCalidadTable();
+  renderEquipos();
+  updateCalidadBadge();
+}
+
+function renderCalidadKPIs() {
+  const hallazgos = rawCalidad.hallazgos;
+  const totalAbiertos = hallazgos.reduce((s, h) => s + (h.abiertos || 0), 0);
+  const promDias = hallazgos.filter(h => h.abiertos > 0).length > 0
+    ? Math.round(hallazgos.filter(h => h.abiertos > 0).reduce((s, h) => s + h.diasAbierto, 0) / hallazgos.filter(h => h.abiertos > 0).length)
+    : 0;
+  const pendVisita = rawCalidad.programacion.filter(p => ['Pendiente','Próximo a visitar'].includes(p.estatusCalidad)).length;
+  const enEspera = rawCalidad.programacion.filter(p => p.estatusCalidad === 'En espera de correcciones').length;
+  const sinPoliza = rawCalidad.programacion.filter(p => p.conPoliza !== 'Si').length;
+  const equiposCrit = rawCalidad.equipos.filter(e => {
+    const d = parseD(e.proximoMant);
+    return d && daysBetween(TODAY, d) <= 30;
+  }).length;
+
+  const cards = [
+    { label: 'NCs Abiertas', value: totalAbiertos, sub: 'hallazgos sin cierre', cls: totalAbiertos > 0 ? 'c-danger' : 'c-accent' },
+    { label: 'Prom. días abierto', value: promDias + 'd', sub: 'proyectos con NC activa', cls: promDias > 60 ? 'c-danger' : promDias > 30 ? 'c-warn' : 'c-accent' },
+    { label: 'Pendiente visita', value: pendVisita, sub: 'sin calidad agendada', cls: pendVisita > 0 ? 'c-warn' : 'c-accent' },
+    { label: 'En espera correc.', value: enEspera, sub: 'bloqueando liberación', cls: enEspera > 0 ? 'c-danger' : 'c-accent' },
+    { label: 'Sin póliza servicio', value: sinPoliza, sub: 'proyectos sin cobertura', cls: sinPoliza > 0 ? 'c-danger' : 'c-gray' },
+    { label: 'Calibración próxima', value: equiposCrit, sub: 'equipos ≤30 días', cls: equiposCrit > 0 ? 'c-warn' : 'c-gray' },
+  ];
+
+  document.getElementById('kpiCalidad').innerHTML = cards.map((c, i) => `
+    <div class="kpi-card ${c.cls} animate-in" style="animation-delay:${i*0.04}s">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.value}</div>
+      <div class="kpi-sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+function renderCalidadFunnel() {
+  const prog = rawCalidad.programacion;
+  const steps = [
+    { label: 'Pendiente', color: 'var(--text3)', count: prog.filter(p => p.estatusCalidad === 'Pendiente').length },
+    { label: 'Próx. visitar', color: 'var(--warn)', count: prog.filter(p => p.estatusCalidad === 'Próximo a visitar').length },
+    { label: 'En correcciones', color: 'var(--danger)', count: prog.filter(p => p.estatusCalidad === 'En espera de correcciones').length },
+    { label: 'Reporte enviado', color: 'var(--info)', count: rawCalidad.calendario.filter(c => c.estatusVisita === 'Reporte enviado').length },
+    { label: 'Aceptado', color: 'var(--accent)', count: prog.filter(p => p.estatusCalidad === 'Aceptado').length },
+  ];
+  document.getElementById('calidadFunnel').innerHTML = steps.map(s => `
+    <div class="funnel-step">
+      <div class="funnel-num" style="color:${s.color}">${s.count}</div>
+      <div class="funnel-label">${s.label}</div>
+    </div>`).join('');
+}
+
+function renderCalidadHbar() {
+  const hallazgos = rawCalidad.hallazgos.filter(h => h.abiertos > 0)
+    .sort((a, b) => b.abiertos - a.abiertos).slice(0, 8);
+  const max = Math.max(1, ...hallazgos.map(h => h.abiertos));
+  document.getElementById('calidadHbarList').innerHTML = hallazgos.map(h => `
+    <li class="hbar-item">
+      <div class="hbar-label">
+        <span>${h.nombreProyecto}</span>
+        <span style="color:var(--danger);font-weight:600">${h.abiertos} / ${h.totalHallazgos}</span>
+      </div>
+      <div class="hbar-track">
+        <div class="hbar-fill" style="width:${(h.abiertos/max*100).toFixed(0)}%;background:var(--danger)"></div>
+      </div>
+    </li>`).join('') || '<li style="color:var(--text3);font-size:11px;padding:8px 0">Sin hallazgos abiertos</li>';
+}
+
+function renderCalidadTimeline() {
+  const canvas = document.getElementById('chartCalidadTimeline');
+  if (chartCalidad) { chartCalidad.destroy(); chartCalidad = null; }
+
+  const weeks = [];
+  const mon = startOfWeek(TODAY);
+  for (let i = 0; i < 12; i++) {
+    const w = new Date(mon.getTime() + i * 7 * 86400000);
+    weeks.push({ start: w, label: w.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }), ms: w.getTime() });
+  }
+
+  const visitas = rawCalidad.calendario;
+  const data = weeks.map(w => {
+    const count = visitas.filter(v => {
+      const d = parseD(v.fechaEntrada);
+      return d && startOfWeek(d).getTime() === w.ms;
+    }).length;
+    return count;
+  });
+
+  chartCalidad = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: weeks.map(w => w.label),
+      datasets: [{ label: 'Visitas', data, backgroundColor: '#9f7aff', borderRadius: 3, barThickness: 16 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#5a6577' } },
+        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 9 }, color: '#5a6577', stepSize: 1 } },
+      },
+    },
+  });
+}
+
+function renderCalidadTable() {
+  const tbody = document.getElementById('calidadBody');
+  document.getElementById('calidadCount').textContent = `(${calidadData.length} proyectos)`;
+
+  let rows = [...calidadData];
+  const { col, asc } = calidadSortState;
+  rows.sort((a, b) => {
+    let va = a[col] ?? '', vb = b[col] ?? '';
+    if (typeof va === 'number') return asc ? va - vb : vb - va;
+    return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+  });
+
+  const estatusCls = e => {
+    if (e === 'Aceptado') return 'badge-green';
+    if (e === 'En espera de correcciones') return 'badge-red';
+    if (e === 'Próximo a visitar') return 'badge-yellow';
+    return 'badge-gray';
+  };
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td style="color:var(--accent);font-weight:500">${r.proj}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${r.proyecto}">${r.proyecto}</td>
+      <td>${r.pm || '—'}</td>
+      <td>${r.supervisor || '—'}</td>
+      <td style="color:${r.abiertos > 0 ? 'var(--danger)' : 'var(--accent)'};font-weight:600">${r.abiertos}</td>
+      <td>${r.total}</td>
+      <td style="color:${r.diasAbierto > 60 ? 'var(--danger)' : r.diasAbierto > 30 ? 'var(--warn)' : 'var(--text)'}">${r.abiertos > 0 ? r.diasAbierto + 'd' : '—'}</td>
+      <td><span class="badge ${estatusCls(r.estatusCalidad)}">${r.estatusCalidad || '—'}</span></td>
+      <td>${r.conPoliza === 'Si' ? '<span class="badge badge-green">Si</span>' : '<span class="badge badge-red">No</span>'}</td>
+      <td>${r.abiertos > 5 ? '<span class="badge badge-red">Crítico</span>' : r.abiertos > 0 ? '<span class="badge badge-yellow">Atención</span>' : '<span class="badge badge-green">OK</span>'}</td>
+    </tr>`).join('');
+
+  document.querySelectorAll('#calidadTable th[data-sort]').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.sort === calidadSortState.col);
+    th.onclick = () => {
+      if (calidadSortState.col === th.dataset.sort) calidadSortState.asc = !calidadSortState.asc;
+      else { calidadSortState.col = th.dataset.sort; calidadSortState.asc = true; }
+      renderCalidadTable();
+    };
+  });
+}
+
+function renderEquipos() {
+  const grid = document.getElementById('equiposGrid');
+  const alertas = rawCalidad.equipos.map(e => {
+    const d = parseD(e.proximoMant);
+    const dias = d ? daysBetween(TODAY, d) : null;
+    const finGar = parseD(e.finGarantia);
+    const garVencida = finGar && finGar < TODAY;
+    return { ...e, diasMant: dias, garVencida };
+  }).filter(e => (e.diasMant !== null && e.diasMant <= 60) || e.garVencida);
+
+  if (!alertas.length) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:16px;">Sin alertas de equipos próximas.</div>';
+    return;
+  }
+  grid.innerHTML = alertas.map(e => {
+    const type = e.diasMant !== null && e.diasMant <= 0 ? 'a-danger' : e.diasMant !== null && e.diasMant <= 30 ? 'a-warn' : 'a-info';
+    const msg = e.diasMant !== null ? (e.diasMant <= 0 ? 'Mantenimiento/calibración VENCIDO' : `Calibración en ${e.diasMant} días`) : '';
+    const garMsg = e.garVencida ? ' · Garantía vencida' : '';
+    return `<div class="anomaly-card ${type}">
+      <div class="anomaly-title">${e.equipo}</div>
+      <div class="anomaly-body">${msg}${garMsg}</div>
+      <div class="anomaly-projs">Serie: ${e.serie} · Frecuencia: ${e.frecuenciaCalib}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateCalidadBadge() {
+  const totalAbiertos = rawCalidad.hallazgos.reduce((s, h) => s + (h.abiertos || 0), 0);
+  const badge = document.getElementById('badge-calidad');
+  badge.textContent = totalAbiertos;
+  badge.style.display = totalAbiertos > 0 ? 'inline-flex' : 'none';
+}
+
+// ─── MANTENIMIENTOS FILTERS ──────────────────────────────────────
+function buildMantFilters() {
+  if (!rawMant) return;
+  const items = rawMant.mantenimientos;
+  const zonas = [...new Set(items.map(m => m.zona).filter(Boolean))].sort();
+  const sups = [...new Set(items.map(m => m.supervisor).filter(Boolean))].sort();
+  const ests = [...new Set(items.map(m => m.estatusProyecto).filter(Boolean))].sort();
+
+  const fill = (id, vals) => {
+    const el = document.getElementById(id); if (!el) return;
+    el.innerHTML = `<option value="">Todos</option>` + vals.map(v => `<option>${v}</option>`).join('');
+  };
+  fill('mZona', zonas);
+  fill('mSupervisor', sups);
+  fill('mEstatusProj', ests);
+}
+
+function applyMantFilters() {
+  if (!rawMant) { fetchMantenimientos(); return; }
+  const fZona = document.getElementById('mZona').value;
+  const fSup = document.getElementById('mSupervisor').value;
+  const fPol = document.getElementById('mPoliza').value;
+  const fEst = document.getElementById('mEstatusProj').value;
+
+  let rows = rawMant.mantenimientos;
+  if (fZona) rows = rows.filter(r => r.zona === fZona);
+  if (fSup) rows = rows.filter(r => r.supervisor === fSup);
+  if (fPol) rows = rows.filter(r => r.estatusPoliza === fPol);
+  if (fEst) rows = rows.filter(r => r.estatusProyecto === fEst);
+
+  mantData = rows;
+  renderMant();
+}
+
+function clearMantFilters() {
+  ['mZona','mSupervisor','mPoliza','mEstatusProj'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  applyMantFilters();
+}
+
+// ─── RENDER MANTENIMIENTOS ───────────────────────────────────────
+function renderMant() {
+  renderMantKPIs();
+  renderMantZonas();
+  renderPolizasDonut();
+  renderSupervisoresChart();
+  renderMantTable();
+  renderMantAnomalias();
+  updateMantBadge();
+}
+
+function renderMantKPIs() {
+  const all = rawMant.mantenimientos;
+  const curMonth = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1).getTime();
+  const esteMes = all.filter(m => {
+    const d = parseD(m.mesProgr);
+    return d && new Date(d.getFullYear(), d.getMonth(), 1).getTime() === curMonth;
+  }).length;
+
+  const conFecha = all.filter(m => m.ejecutadoFecha !== null);
+  const cumplPct = conFecha.length > 0
+    ? Math.round(conFecha.filter(m => m.ejecutadoFecha === 'Si').length / conFecha.length * 100)
+    : null;
+  const cumplCls = cumplPct === null ? 'c-gray' : cumplPct >= 90 ? 'c-accent' : cumplPct >= 70 ? 'c-warn' : 'c-danger';
+
+  const polizasVencer = all.filter(m => m.estatusPoliza === 'Próxima a vencer').length;
+  const polizasVencidas = all.filter(m => m.estatusPoliza === 'Vencida').length;
+
+  const reportesPend = all.filter(m => {
+    const fin = parseD(m.fechaRealFin);
+    return fin && fin < TODAY && !m.fechaEntregaReporte;
+  }).length;
+
+  const kWpCubierto = all.filter(m => m.fechaRealFin).reduce((s, m) => s + (m.capacidadKWp || 0), 0);
+
+  const cards = [
+    { label: 'Mant. este mes', value: esteMes, sub: 'programados', cls: 'c-info' },
+    { label: 'Cumplimiento', value: cumplPct !== null ? cumplPct + '%' : '—', sub: 'en fecha programada', cls: cumplCls },
+    { label: 'Pólizas próx. vencer', value: polizasVencer, sub: '≤60 días', cls: polizasVencer > 0 ? 'c-warn' : 'c-gray' },
+    { label: 'Pólizas vencidas', value: polizasVencidas, sub: 'requieren renovación', cls: polizasVencidas > 0 ? 'c-danger' : 'c-gray' },
+    { label: 'Reportes pendientes', value: reportesPend, sub: 'sin entregar', cls: reportesPend > 0 ? 'c-warn' : 'c-accent' },
+    { label: 'kWp cubiertos', value: Math.round(kWpCubierto), sub: 'con mant. realizado', cls: 'c-accent' },
+  ];
+
+  document.getElementById('kpiMant').innerHTML = cards.map((c, i) => `
+    <div class="kpi-card ${c.cls} animate-in" style="animation-delay:${i*0.04}s">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.value}</div>
+      <div class="kpi-sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+function renderMantZonas() {
+  const items = mantData;
+  const zonas = ['Norte', 'Sur', 'Centro', 'Occidente'];
+  const zoneColors = { Norte: '#4c9fff', Sur: '#00AA85', Centro: '#9f7aff', Occidente: '#ff9f43' };
+
+  document.getElementById('mantZonaGrid').innerHTML = zonas.map(z => {
+    const zItems = items.filter(m => m.zona === z);
+    const total = zItems.length;
+    if (!total) return `<div class="zone-card"><div class="zone-name">${z}</div><div class="zone-val" style="color:var(--text3)">0</div><div class="zone-sub">sin sitios</div></div>`;
+    const ejecutados = zItems.filter(m => m.ejecutadoFecha === 'Si').length;
+    const pct = Math.round(ejecutados / total * 100);
+    const color = zoneColors[z] || 'var(--accent)';
+    return `<div class="zone-card">
+      <div class="zone-name">${z}</div>
+      <div class="zone-val" style="color:${color}">${total}</div>
+      <div class="zone-sub">${pct}% cumplido</div>
+      <div class="zone-bar"><div class="zone-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderPolizasDonut() {
+  const canvas = document.getElementById('chartPolizas');
+  if (chartPolizas) { chartPolizas.destroy(); chartPolizas = null; }
+
+  const all = rawMant.mantenimientos;
+  const vigente = all.filter(m => m.estatusPoliza === 'Vigente').length;
+  const proxima = all.filter(m => m.estatusPoliza === 'Próxima a vencer').length;
+  const vencida = all.filter(m => m.estatusPoliza === 'Vencida').length;
+  const otro = all.length - vigente - proxima - vencida;
+
+  chartPolizas = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: ['Vigente', 'Próxima a vencer', 'Vencida', 'Sin datos'],
+      datasets: [{ data: [vigente, proxima, vencida, otro], backgroundColor: ['#00AA85','#f5a623','#ff4757','#5a6577'], borderWidth: 0 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } } },
+    },
+  });
+
+  document.getElementById('polizaLegend').innerHTML = [
+    { label: 'Vigente', val: vigente, color: '#00AA85' },
+    { label: 'Próx. vencer', val: proxima, color: '#f5a623' },
+    { label: 'Vencida', val: vencida, color: '#ff4757' },
+  ].map(l => `<div style="display:flex;align-items:center;gap:6px;"><div style="width:10px;height:10px;border-radius:50%;background:${l.color};flex-shrink:0"></div>${l.label}: <strong>${l.val}</strong></div>`).join('');
+}
+
+function renderSupervisoresChart() {
+  const canvas = document.getElementById('chartSupervisores');
+  if (chartSuperv) { chartSuperv.destroy(); chartSuperv = null; }
+
+  const items = rawMant.mantenimientos;
+  const sups = [...new Set(items.map(m => m.supervisor).filter(Boolean))].sort();
+
+  const programados = sups.map(s => items.filter(m => m.supervisor === s).length);
+  const ejecutados = sups.map(s => items.filter(m => m.supervisor === s && m.ejecutadoFecha === 'Si').length);
+
+  chartSuperv = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: sups,
+      datasets: [
+        { label: 'Programados', data: programados, backgroundColor: 'rgba(76,159,255,0.3)', borderColor: '#4c9fff', borderWidth: 1 },
+        { label: 'Ejecutados', data: ejecutados, backgroundColor: 'rgba(0,170,133,0.6)', borderColor: '#00AA85', borderWidth: 1 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 9 }, color: '#a0aab4' } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#5a6577' } },
+        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 9 }, color: '#5a6577', stepSize: 1 } },
+      },
+    },
+  });
+}
+
+function renderMantTable() {
+  const tbody = document.getElementById('mantBody');
+  document.getElementById('mantCount').textContent = `(${mantData.length} sitios)`;
+
+  let rows = [...mantData];
+  const { col, asc } = mantSortState;
+  rows.sort((a, b) => {
+    let va = a[col] ?? '', vb = b[col] ?? '';
+    if (typeof va === 'number') return asc ? va - vb : vb - va;
+    return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+  });
+
+  const polizaBadge = e => {
+    if (e === 'Vigente') return `<span class="badge badge-vigente">Vigente</span>`;
+    if (e === 'Próxima a vencer') return `<span class="badge badge-proxima">Próx. vencer</span>`;
+    if (e === 'Vencida') return `<span class="badge badge-vencida">Vencida</span>`;
+    return `<span class="badge badge-gray">${e || '—'}</span>`;
+  };
+
+  tbody.innerHTML = rows.map(r => {
+    const cumpl = r.ejecutadoFecha === 'Si'
+      ? '<span class="badge badge-green">Si</span>'
+      : r.fechaRealFin ? '<span class="badge badge-red">No</span>' : '<span class="badge badge-gray">Pendiente</span>';
+    const repBadge = r.fechaEntregaReporte
+      ? `<span class="badge badge-green">${fmtShort(parseD(r.fechaEntregaReporte))}</span>`
+      : (r.fechaRealFin ? '<span class="badge badge-red">Pendiente</span>' : '—');
+    return `<tr>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${r.nombreSitio}">${r.nombreSitio}</td>
+      <td>${r.zona || '—'}</td>
+      <td>${r.supervisor || '—'}</td>
+      <td style="color:var(--info)">${r.capacidadKWp ? r.capacidadKWp.toFixed(1) : '—'}</td>
+      <td>${r.mesProgr ? new Date(r.mesProgr).toLocaleDateString('es-MX',{month:'short',year:'numeric'}) : '—'}</td>
+      <td>${fmtShort(parseD(r.fechaProgramada))}</td>
+      <td>${r.fechaRealFin ? fmtShort(parseD(r.fechaRealFin)) : '<span style="color:var(--text3)">—</span>'}</td>
+      <td style="color:var(--text2)">${r.duracion > 0 ? r.duracion + 'd' : '—'}</td>
+      <td>${repBadge}</td>
+      <td>${polizaBadge(r.estatusPoliza)}</td>
+      <td>${cumpl}</td>
+    </tr>`;
+  }).join('');
+
+  document.querySelectorAll('#mantTable th[data-sort]').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.sort === mantSortState.col);
+    th.onclick = () => {
+      if (mantSortState.col === th.dataset.sort) mantSortState.asc = !mantSortState.asc;
+      else { mantSortState.col = th.dataset.sort; mantSortState.asc = true; }
+      renderMantTable();
+    };
+  });
+}
+
+function renderMantAnomalias() {
+  const grid = document.getElementById('mantAnomalyGrid');
+  const items = rawMant.mantenimientos;
+  const anomalies = [];
+
+  const vencidas = items.filter(m => m.estatusPoliza === 'Vencida');
+  if (vencidas.length) anomalies.push({
+    type: 'a-danger', title: 'Pólizas vencidas',
+    body: `${vencidas.length} sitio${vencidas.length > 1 ? 's' : ''} con póliza de servicio vencida. Requieren renovación urgente.`,
+    projs: vencidas.map(m => m.nombreSitio.split('|')[0].trim()).join(', '),
+  });
+
+  const sinReporte = items.filter(m => {
+    const fin = parseD(m.fechaRealFin);
+    return fin && fin < TODAY && !m.fechaEntregaReporte;
+  });
+  if (sinReporte.length) anomalies.push({
+    type: 'a-warn', title: 'Reportes sin entregar',
+    body: `${sinReporte.length} mantenimiento${sinReporte.length > 1 ? 's' : ''} completado${sinReporte.length > 1 ? 's' : ''} sin reporte de entrega registrado.`,
+    projs: sinReporte.map(m => m.nombreSitio.split('|')[0].trim()).join(', '),
+  });
+
+  const sinPase = items.filter(m => m.estatusPase !== 'Con pase de cuenta' && m.estatusProyecto === 'Encendido');
+  if (sinPase.length) anomalies.push({
+    type: 'a-info', title: 'Sin pase de cuenta en O&M',
+    body: `${sinPase.length} sitio${sinPase.length > 1 ? 's' : ''} encendido${sinPase.length > 1 ? 's' : ''} sin pase de cuenta registrado. Verificar con Calidad.`,
+    projs: sinPase.map(m => m.nombreSitio.split('|')[0].trim()).join(', '),
+  });
+
+  grid.innerHTML = anomalies.length
+    ? anomalies.map(a => `
+        <div class="anomaly-card ${a.type}">
+          <div class="anomaly-title">${a.title}</div>
+          <div class="anomaly-body">${a.body}</div>
+          <div class="anomaly-projs">${a.projs}</div>
+        </div>`).join('')
+    : '<div style="color:var(--text3);font-size:11px;padding:16px;">Sin alertas operativas.</div>';
+}
+
+function updateMantBadge() {
+  const vencidas = rawMant.mantenimientos.filter(m => m.estatusPoliza === 'Vencida').length;
+  const sinReporte = rawMant.mantenimientos.filter(m => {
+    const fin = parseD(m.fechaRealFin);
+    return fin && fin < TODAY && !m.fechaEntregaReporte;
+  }).length;
+  const total = vencidas + sinReporte;
+  const badge = document.getElementById('badge-mant');
+  badge.textContent = total;
+  badge.style.display = total > 0 ? 'inline-flex' : 'none';
+}
+
+// ─── CROSS-TAB: enrich pipeline table with Calidad + Mant badges ──
+function getCrossTabBadges(proj) {
+  let html = '';
+  if (rawCalidad) {
+    const h = rawCalidad.hallazgos.find(h => h.projInstalaciones === proj);
+    if (h && h.abiertos > 0) {
+      html += `<span class="badge badge-red" title="${h.abiertos} NC abierta${h.abiertos > 1 ? 's' : ''} en Calidad" style="margin-left:4px">NC:${h.abiertos}</span>`;
+    }
+  }
+  if (rawMant) {
+    const projNum = parseInt((proj || '').replace('PROJ-', ''));
+    const m = rawMant.mantenimientos.find(m => m.projInstalaciones === projNum);
+    if (m) {
+      if (m.estatusPoliza === 'Vencida') html += `<span class="badge badge-red" title="Póliza O&M vencida" style="margin-left:4px">Póliza</span>`;
+      else if (m.estatusPoliza === 'Próxima a vencer') html += `<span class="badge badge-yellow" title="Póliza O&M próxima a vencer" style="margin-left:4px">Póliza</span>`;
+    }
+  }
+  return html;
+}
 </script>
 </body>
 </html>
