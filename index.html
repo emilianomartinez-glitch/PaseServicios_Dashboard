@@ -344,6 +344,28 @@ footer {
   color: #fff; vertical-align: middle;
 }
 
+/* ═══════════ PROCESS PIPELINE ═══════════ */
+.process-pipeline { display:flex; align-items:center; gap:0; flex-wrap:wrap; }
+.stage-chip { display:flex; flex-direction:column; align-items:center; padding:10px 14px; min-width:110px; flex:1; background:rgba(255,255,255,0.03); border-radius:6px; transition:background .15s; }
+.stage-chip:hover { background:rgba(255,255,255,0.07); }
+.stage-chip.stage-zero { opacity:.4; }
+.stage-chip.stage-complete .stage-chip-count { color:#00AA85 !important; }
+.stage-chip-count { font-size:26px; font-weight:700; line-height:1; }
+.stage-chip-label { font-size:10px; color:var(--text2); text-align:center; margin-top:4px; }
+.stage-chip-pct { font-size:10px; color:var(--text3); margin-top:2px; }
+.stage-arrow { font-size:20px; color:var(--text3); padding:0 4px; flex-shrink:0; }
+
+/* ═══════════ STUCK PROJECTS ═══════════ */
+.sla-insight { font-size:10px; color:var(--text2); padding:6px 0 10px; border-bottom:1px solid rgba(255,255,255,0.06); margin-bottom:0; }
+.sla-label { color:var(--text3); margin-right:6px; }
+.sla-median { color:var(--text3); }
+tr.stuck-crit td { background:rgba(255,71,87,.06); }
+tr.stuck-warn td { background:rgba(245,166,35,.05); }
+.days-cell { font-weight:700; font-size:12px; }
+.days-cell.stuck-crit { color:#ff4757; }
+.days-cell.stuck-warn { color:#f5a623; }
+.days-cell.stuck-ok { color:var(--text2); }
+
 /* ═══════════ VISITS CALENDAR ═══════════ */
 .visits-calendar { display:flex; flex-direction:column; gap:0; max-height:320px; overflow-y:auto; }
 .week-block { border-bottom:1px solid rgba(255,255,255,0.05); }
@@ -606,6 +628,35 @@ footer {
     <div id="mainCalidad" style="display:none;">
       <!-- KPIs -->
       <div class="kpi-grid" id="kpiCalidad"></div>
+
+      <!-- Process Pipeline -->
+      <div class="section-label">Estado del proceso — dónde está cada proyecto</div>
+      <div class="card full-width" style="margin-bottom:16px;">
+        <div class="card-body" style="padding:12px 16px">
+          <div class="process-pipeline" id="processPipeline"></div>
+        </div>
+      </div>
+
+      <!-- Stuck Projects -->
+      <div class="section-label">Proyectos sin movimiento <span class="tbl-count" id="stuckCount"></span></div>
+      <div class="card full-width" style="margin-bottom:16px;">
+        <div class="card-body" style="padding:10px 16px 6px">
+          <div class="sla-insight" id="slaInsight"></div>
+        </div>
+        <div class="table-scroll">
+          <table class="pipeline" id="stuckTable">
+            <thead><tr>
+              <th>PROJ</th>
+              <th>Proyecto</th>
+              <th>PM</th>
+              <th>Etapa actual</th>
+              <th>Días sin minuta</th>
+              <th>Última minuta</th>
+            </tr></thead>
+            <tbody id="stuckProjectsBody"></tbody>
+          </table>
+        </div>
+      </div>
 
       <!-- Funnel + Hallazgos Chart -->
       <div class="section-label">Pipeline de calidad</div>
@@ -1897,6 +1948,18 @@ function parseCalidadPayload(raw) {
         totalViaticos: parseFloat(r['Total viaticos\n(Comida - Caseta - Gasolina)']) || 0,
       });
     } else if ('Aprobación de calidad' in r || 'Sitio' in r) {
+      // Extract timestamped meeting notes: "Minuta de DD-MM-YYYY"
+      const minutaRe = /^Minuta de (\d{2}-\d{2}-\d{4})$/i;
+      const minutaHistory = Object.entries(r)
+        .filter(([k]) => minutaRe.test(k.trim()))
+        .map(([k, v]) => {
+          const [dd, mm, yyyy] = k.trim().match(minutaRe)[1].split('-');
+          return { date: new Date(+yyyy, +mm - 1, +dd), note: (v || '').trim() };
+        })
+        .sort((a, b) => b.date - a.date);
+      const lastActive = minutaHistory.find(m => m.note !== '');
+      const lastMinutaDate = lastActive ? lastActive.date : null;
+      const daysSinceMinuta = lastMinutaDate ? Math.floor((TODAY - lastMinutaDate) / 86400000) : null;
       lib.push({
         sitio: r['Sitio'] || '',
         proj: r['PROJ Instalaciones'] || '',
@@ -1910,6 +1973,10 @@ function parseCalidadPayload(raw) {
         cadenaCorreos: r['Cadena de correos'] || '',
         actualizacion: r['Actualización despues de la sesión'] || '',
         aceptadoScoop: ((r['Aceptado en scoop '] || r['Aceptado en scoop'] || '')).trim(),
+        lastMinutaDate,
+        lastMinutaNote: lastActive ? lastActive.note : '',
+        daysSinceMinuta,
+        minutaHistory,
       });
     }
   }
@@ -2031,6 +2098,29 @@ function buildCalidadFilterOptions() {
   fill('cEstatus', ests);
 }
 
+// ─── PROCESS STAGE CLASSIFIER ────────────────────────────────────
+const STAGE_META = {
+  pending_approval: { label: 'Aprobaciones pendientes', color: '#ff4757', icon: '⏳', order: 0 },
+  nc_open:          { label: 'NCs abiertas',            color: '#ff6b35', icon: '⚠️',  order: 1 },
+  no_visit:         { label: 'Sin visita programada',   color: '#f5a623', icon: '📅', order: 2 },
+  no_poliza:        { label: 'Sin póliza',              color: '#a8b2c1', icon: '📄', order: 3 },
+  no_scoop:         { label: 'Sin registro Scoop',      color: '#5a6577', icon: '🔗', order: 4 },
+  complete:         { label: 'Completo',                color: '#00AA85', icon: '✅', order: 5 },
+};
+
+function classifyStage(row) {
+  const allApproved = row.aprobCalidad === 'Aceptado'
+    && row.aprobMonitoreo === 'Aceptado'
+    && row.aprobPSMs === 'Aceptado';
+  if (!allApproved) return 'pending_approval';
+  if ((row.abiertos || 0) > 0) return 'nc_open';
+  const hasVisitData = !!(row.estatusCalidad || row.visitaCalidad || row.commissioning);
+  if (!hasVisitData) return 'no_visit';
+  if (row.conPoliza !== 'Si') return 'no_poliza';
+  if (!row.aceptadoScoop) return 'no_scoop';
+  return 'complete';
+}
+
 function applyCalidadFilters() {
   if (!rawCalidad) { fetchCalidad(); return; }
   buildCalidadFilterOptions();
@@ -2038,24 +2128,60 @@ function applyCalidadFilters() {
   const fSup = document.getElementById('cSupervisor').value;
   const fEst = document.getElementById('cEstatus').value;
 
-  // Merge Sheet2 programacion + Sheet4 hallazgos + Sheet1 liberaciones by PROJ
-  const hallMap = {};
-  rawCalidad.hallazgos.forEach(h => { hallMap[h.projInstalaciones] = h; });
-  const libMap = {};
-  rawCalidad.liberaciones.forEach(l => { libMap[l.proj] = l; });
+  // Sheet 1 (liberaciones) is the MASTER list — every project lives here.
+  // Sheet 2 (programacion) is a SUBSET: only projects with a scheduled quality visit.
+  // Sheet 4 (hallazgos) has MULTIPLE rows per project (one per visit) → must aggregate.
 
-  let rows = rawCalidad.programacion.map(p => ({
-    ...p,
-    abiertos: hallMap[p.proj]?.abiertos ?? 0,
-    total: hallMap[p.proj]?.total ?? 0,
-    diasAbierto: hallMap[p.proj]?.diasAbierto ?? 0,
-    // Póliza desde Sheet 1 (más confiable que Sheet 2)
-    conPoliza: libMap[p.proj]?.conPoliza ?? '',
-    aprobCalidad: libMap[p.proj]?.aprobCalidad ?? '',
-    aprobMonitoreo: libMap[p.proj]?.aprobMonitoreo ?? '',
-    aprobPSMs: libMap[p.proj]?.aprobPSMs ?? '',
-    aceptadoScoop: libMap[p.proj]?.aceptadoScoop ?? '',
-  }));
+  // Build progMap from Sheet 2 (enrichment, not base)
+  const progMap = {};
+  rawCalidad.programacion.forEach(p => { progMap[p.proj] = p; });
+
+  // Aggregate Sheet 4 per project: sum NCs, take worst-case diasAbierto
+  const hallAgg = {};
+  rawCalidad.hallazgos.forEach(h => {
+    const key = String(h.projInstalaciones || '').trim();
+    if (!key) return;
+    if (!hallAgg[key]) hallAgg[key] = { abiertos: 0, total: 0, diasAbierto: 0 };
+    hallAgg[key].abiertos += h.abiertos || 0;
+    hallAgg[key].total += h.total || 0;
+    hallAgg[key].diasAbierto = Math.max(hallAgg[key].diasAbierto, h.diasAbierto || 0);
+  });
+
+  // Base rows on Sheet 1 — all projects visible regardless of visit status
+  let rows = rawCalidad.liberaciones.map(l => {
+    const p = progMap[String(l.proj || '').trim()] || {};
+    const h = hallAgg[String(l.proj || '').trim()] || { abiertos: 0, total: 0, diasAbierto: 0 };
+    const row = {
+      ...l,
+      proyecto: l.sitio || l.proyecto || '',
+      supervisor: p.supervisor || '',
+      estatusCalidad: p.estatusCalidad || '',
+      visitaCalidad: p.visitaCalidad || '',
+      commissioning: p.commissioning || '',
+      abiertos: h.abiertos,
+      total: h.total,
+      diasAbierto: h.diasAbierto,
+    };
+    row.stage = classifyStage(row);
+    return row;
+  });
+
+  // SLA suggestion: compute P75 and P90 of daysSinceMinuta for non-complete projects
+  const activeDays = rows
+    .filter(r => r.stage !== 'complete' && r.daysSinceMinuta !== null)
+    .map(r => r.daysSinceMinuta)
+    .sort((a, b) => a - b);
+  if (activeDays.length > 2) {
+    const p75 = activeDays[Math.floor(activeDays.length * 0.75)];
+    const p90 = activeDays[Math.floor(activeDays.length * 0.90)];
+    window._calSlaWarn = Math.max(7, Math.round(p75 / 7) * 7);
+    window._calSlaCrit = Math.max(14, Math.round(p90 / 7) * 7);
+    window._calSlaMedian = activeDays[Math.floor(activeDays.length * 0.50)];
+  } else {
+    window._calSlaWarn = 14;
+    window._calSlaCrit = 28;
+    window._calSlaMedian = null;
+  }
 
   if (fPM) rows = rows.filter(r => r.pm === fPM);
   if (fSup) rows = rows.filter(r => r.supervisor === fSup);
@@ -2073,6 +2199,8 @@ function clearCalidadFilters() {
 // ─── RENDER CALIDAD ──────────────────────────────────────────────
 function renderCalidad() {
   renderCalidadKPIs();
+  renderProcessPipeline();
+  renderStuckProjects();
   renderCalidadFunnel();
   renderAprobaciones();
   renderPresupuesto();
@@ -2082,6 +2210,76 @@ function renderCalidad() {
   renderNCDetail();
   renderEquipos();
   updateCalidadBadge();
+}
+
+// ─── PROCESS PIPELINE ────────────────────────────────────────────
+function renderProcessPipeline() {
+  const el = document.getElementById('processPipeline');
+  if (!el || !calidadData) return;
+  const counts = {};
+  Object.keys(STAGE_META).forEach(k => { counts[k] = 0; });
+  calidadData.forEach(r => { if (r.stage) counts[r.stage] = (counts[r.stage] || 0) + 1; });
+  const total = calidadData.length;
+  el.innerHTML = Object.entries(STAGE_META)
+    .sort((a, b) => a[1].order - b[1].order)
+    .map(([key, meta]) => {
+      const n = counts[key] || 0;
+      const pct = total > 0 ? Math.round(n / total * 100) : 0;
+      const isComplete = key === 'complete';
+      return `<div class="stage-chip${isComplete ? ' stage-complete' : n === 0 ? ' stage-zero' : ''}">
+        <div class="stage-chip-count" style="color:${meta.color}">${n}</div>
+        <div class="stage-chip-label">${meta.label}</div>
+        <div class="stage-chip-pct">${pct}%</div>
+      </div>`;
+    }).join('<div class="stage-arrow">›</div>');
+}
+
+// ─── STUCK PROJECTS ───────────────────────────────────────────────
+function renderStuckProjects() {
+  const el = document.getElementById('stuckProjectsBody');
+  const slaBox = document.getElementById('slaInsight');
+  if (!el || !calidadData) return;
+
+  const slaWarn = window._calSlaWarn || 14;
+  const slaCrit = window._calSlaCrit || 28;
+  const median = window._calSlaMedian;
+
+  // SLA insight box
+  if (slaBox) {
+    const medText = median !== null ? `La mitad de los proyectos activos recibe atención en <strong>${median} días</strong> o menos.` : '';
+    slaBox.innerHTML = `<span class="sla-label">Umbrales sugeridos por tus datos:</span>
+      🟡 Sin movimiento &gt; <strong>${slaWarn} días</strong> → Atención &nbsp;·&nbsp;
+      🔴 Sin movimiento &gt; <strong>${slaCrit} días</strong> → Crítico
+      ${median !== null ? `<span class="sla-median"> · ${medText}</span>` : ''}`;
+  }
+
+  const stuck = calidadData
+    .filter(r => r.stage !== 'complete' && r.daysSinceMinuta !== null)
+    .sort((a, b) => b.daysSinceMinuta - a.daysSinceMinuta)
+    .slice(0, 20);
+
+  document.getElementById('stuckCount').textContent = `(${stuck.length} proyectos activos con historial de minutas)`;
+
+  if (!stuck.length) {
+    el.innerHTML = `<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:16px">Sin proyectos con historial de minutas disponible aún.</td></tr>`;
+    return;
+  }
+
+  el.innerHTML = stuck.map(r => {
+    const d = r.daysSinceMinuta;
+    const cls = d >= slaCrit ? 'stuck-crit' : d >= slaWarn ? 'stuck-warn' : 'stuck-ok';
+    const stageMeta = STAGE_META[r.stage] || {};
+    const note = r.lastMinutaNote ? `<span title="${r.lastMinutaNote}">${r.lastMinutaNote.slice(0,55)}${r.lastMinutaNote.length > 55 ? '…' : ''}</span>` : '<span style="color:var(--text3)">—</span>';
+    const dateStr = r.lastMinutaDate ? r.lastMinutaDate.toLocaleDateString('es-MX', {day:'2-digit',month:'short',year:'numeric'}) : '—';
+    return `<tr class="${cls}">
+      <td style="color:var(--accent);font-weight:500;white-space:nowrap">${r.proj || '—'}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis" title="${r.proyecto}">${r.proyecto}</td>
+      <td>${r.pm || '—'}</td>
+      <td><span class="badge" style="background:${stageMeta.color}20;color:${stageMeta.color};border:1px solid ${stageMeta.color}40">${stageMeta.label || r.stage}</span></td>
+      <td class="days-cell ${cls}">${d}d</td>
+      <td style="font-size:10px;color:var(--text2)">${dateStr} — ${note}</td>
+    </tr>`;
+  }).join('');
 }
 
 function renderCalidadKPIs() {
