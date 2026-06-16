@@ -196,6 +196,19 @@
     },
     {
       "parameters": {
+        "jsCode": "// Aggregate all items into a single flat array so the webhook returns JSON array\nconst all = $input.all().map(item => item.json);\nreturn [{ json: all }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        240
+      ],
+      "id": "c3a7b812-f1d2-4e88-b9c5-9a8d0f234561",
+      "name": "Aggregate to Array"
+    },
+    {
+      "parameters": {
         "respondWith": "json",
         "responseBody": "={{ $json }}",
         "options": {}
@@ -203,8 +216,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        784,
-        48
+        1024,
+        240
       ],
       "id": "e80fedea-2bd5-4516-bdfc-6f02abd6a810",
       "name": "Respond to Webhook"
@@ -298,6 +311,17 @@
       ]
     },
     "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate to Array",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate to Array": {
       "main": [
         [
           {

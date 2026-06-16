@@ -344,6 +344,35 @@ footer {
   color: #fff; vertical-align: middle;
 }
 
+/* ═══════════ VISITS CALENDAR ═══════════ */
+.visits-calendar { display:flex; flex-direction:column; gap:0; max-height:320px; overflow-y:auto; }
+.week-block { border-bottom:1px solid rgba(255,255,255,0.05); }
+.week-block:last-child { border-bottom:none; }
+.week-header {
+  display:flex; align-items:center; gap:8px; padding:6px 14px;
+  background:rgba(255,255,255,0.03); font-size:10px; font-weight:600;
+  color:var(--text3); letter-spacing:.5px; text-transform:uppercase; position:sticky; top:0; z-index:1;
+}
+.week-header .week-badge {
+  background:var(--accent); color:#000; border-radius:10px; padding:1px 7px; font-size:9px; font-weight:700;
+}
+.week-header.week-current { background:rgba(0,170,133,0.08); color:var(--accent); }
+.week-visits { display:flex; flex-wrap:wrap; gap:6px; padding:8px 14px 10px; }
+.visit-chip {
+  display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 9px;
+  font-size:10px; min-width:180px; max-width:260px; flex:1;
+}
+.visit-chip.vc-done { opacity:.55; }
+.visit-chip.vc-report { border-color:var(--accent); }
+.visit-chip.vc-planned { border-color:rgba(159,122,255,.5); }
+.visit-chip-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.visit-chip-content { display:flex; flex-direction:column; gap:1px; overflow:hidden; }
+.visit-chip-person { font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.visit-chip-proj { color:var(--text3); font-size:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.visit-chip-type { font-size:9px; color:var(--text2); }
+.week-empty { padding:6px 14px 10px; font-size:10px; color:var(--text3); font-style:italic; }
+
 /* ═══════════ FUNNEL (Calidad) ═══════════ */
 .funnel-grid {
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
@@ -618,15 +647,16 @@ footer {
         <div class="card">
           <div class="card-header">
             <div class="card-title">Próximas visitas — 12 semanas</div>
+            <div style="font-size:9px;color:var(--text3)" id="visitasTotal"></div>
           </div>
-          <div class="card-body">
-            <div class="chart-wrap"><canvas id="chartCalidadTimeline"></canvas></div>
+          <div class="card-body" style="padding:0">
+            <div id="calidadVisitasCalendar" class="visits-calendar"></div>
           </div>
         </div>
       </div>
 
-      <!-- Tabla hallazgos -->
-      <div class="section-label">Detalle de hallazgos <span class="tbl-count" id="calidadCount"></span></div>
+      <!-- Tabla resumen por proyecto -->
+      <div class="section-label">Resumen por proyecto <span class="tbl-count" id="calidadCount"></span></div>
       <div class="card full-width" style="margin-bottom:16px;">
         <div class="table-scroll">
           <table class="pipeline" id="calidadTable">
@@ -644,6 +674,28 @@ footer {
               <th>Alerta</th>
             </tr></thead>
             <tbody id="calidadBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Detalle NC por hallazgo -->
+      <div class="section-label">Detalle de hallazgos por visita <span class="tbl-count" id="ncDetailCount"></span></div>
+      <div class="card full-width" style="margin-bottom:16px;">
+        <div class="table-scroll">
+          <table class="pipeline" id="ncDetailTable">
+            <thead><tr>
+              <th data-sort="projInstalaciones">PROJ</th>
+              <th data-sort="nombreProyecto">Proyecto</th>
+              <th data-sort="supervisor">Supervisor</th>
+              <th data-sort="visita"># Visita</th>
+              <th data-sort="abiertos">NCs Ab/Tot</th>
+              <th data-sort="diasAbierto">Días Ab.</th>
+              <th data-sort="fechaEnvioReporte">Envío reporte</th>
+              <th data-sort="ultimoSeguimiento">Últ. seguimiento</th>
+              <th data-sort="fechaCierre">Fecha cierre</th>
+              <th>Comentarios</th>
+            </tr></thead>
+            <tbody id="ncDetailBody"></tbody>
           </table>
         </div>
       </div>
@@ -1748,9 +1800,21 @@ let chartPolizas = null;
 let chartSuperv = null;
 
 // ─── PARSE CALIDAD PAYLOAD ───────────────────────────────────────
-// El webhook devuelve un array plano de 292 registros con 5 schemas distintos.
+// El webhook devuelve un array plano de N registros con 5 schemas distintos.
 // Los detectamos por campos únicos de cada hoja y normalizamos a aliases limpios.
-function parseCalidadPayload(arr) {
+function parseCalidadPayload(raw) {
+  // Normalize response shape: could be flat array, wrapped object, or single object
+  let arr;
+  if (Array.isArray(raw)) {
+    arr = raw;
+  } else if (raw && typeof raw === 'object') {
+    // n8n Respond to Webhook with $json sends one item — try common wrappers first
+    if (Array.isArray(raw.data)) arr = raw.data;
+    else if (Array.isArray(raw.items)) arr = raw.items;
+    else arr = Object.values(raw).filter(v => v && typeof v === 'object');
+  } else {
+    arr = [];
+  }
   const lib = [], prog = [], cal = [], hall = [], equip = [];
   for (const r of arr) {
     if ('Equipo/Herramienta (Marca y modelo)' in r) {
@@ -1945,6 +2009,7 @@ function renderCalidad() {
   renderCalidadHbar();
   renderCalidadTimeline();
   renderCalidadTable();
+  renderNCDetail();
   renderEquipos();
   updateCalidadBadge();
 }
@@ -2114,39 +2179,149 @@ function renderCalidadHbar() {
 }
 
 function renderCalidadTimeline() {
-  const canvas = document.getElementById('chartCalidadTimeline');
-  if (chartCalidad) { chartCalidad.destroy(); chartCalidad = null; }
+  const container = document.getElementById('calidadVisitasCalendar');
+  if (!container) return;
 
   const weeks = [];
   const mon = startOfWeek(TODAY);
   for (let i = 0; i < 12; i++) {
     const w = new Date(mon.getTime() + i * 7 * 86400000);
-    weeks.push({ start: w, label: w.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }), ms: w.getTime() });
+    const end = new Date(w.getTime() + 6 * 86400000);
+    weeks.push({
+      start: w, end,
+      isCurrent: i === 0,
+      label: w.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) +
+             ' – ' + end.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }),
+      ms: w.getTime(),
+    });
   }
 
-  const visitas = rawCalidad.calendario;
-  const data = weeks.map(w => {
-    const count = visitas.filter(v => {
+  const visitaColorDot = estatus => {
+    if (!estatus) return ['#5a6577', ''];
+    const s = estatus.toLowerCase();
+    if (s.includes('reporte')) return ['var(--accent)', 'vc-report'];
+    if (s.includes('realiz') || s.includes('completad')) return ['#5a6577', 'vc-done'];
+    return ['#9f7aff', 'vc-planned'];
+  };
+
+  const all = rawCalidad.calendario;
+  let totalShown = 0;
+
+  container.innerHTML = weeks.map(w => {
+    const visitas = all.filter(v => {
       const d = parseD(v.fechaEntrada);
       return d && startOfWeek(d).getTime() === w.ms;
-    }).length;
-    return count;
-  });
+    });
+    totalShown += visitas.length;
 
-  chartCalidad = new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels: weeks.map(w => w.label),
-      datasets: [{ label: 'Visitas', data, backgroundColor: '#9f7aff', borderRadius: 3, barThickness: 16 }],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#5a6577' } },
-        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 9 }, color: '#5a6577', stepSize: 1 } },
-      },
-    },
+    const chips = visitas.map(v => {
+      const [color, cls] = visitaColorDot(v.estatusVisita);
+      const persona = v.integrante || '—';
+      const proj = v.proyecto || v.projInstalaciones || '';
+      const tipo = v.tipoVisita || '';
+      const estBadge = v.estatusVisita ? `<span class="visit-chip-type">${v.estatusVisita}</span>` : '';
+      return `<div class="visit-chip ${cls}" title="${persona} · ${proj}">
+        <div class="visit-chip-dot" style="background:${color}"></div>
+        <div class="visit-chip-content">
+          <div class="visit-chip-person">${persona}</div>
+          <div class="visit-chip-proj">${proj}</div>
+          ${tipo ? `<div class="visit-chip-type">${tipo}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    const hdr = `<div class="week-header${w.isCurrent ? ' week-current' : ''}">
+      ${w.label}
+      ${visitas.length ? `<span class="week-badge">${visitas.length}</span>` : ''}
+    </div>`;
+    const body = visitas.length
+      ? `<div class="week-visits">${chips}</div>`
+      : `<div class="week-empty">Sin visitas programadas</div>`;
+    return `<div class="week-block">${hdr}${body}</div>`;
+  }).join('');
+
+  const el = document.getElementById('visitasTotal');
+  if (el) el.textContent = totalShown + ' visitas en 12 semanas';
+}
+
+function renderNCDetail() {
+  const hall = rawCalidad.hallazgos;
+  const tbody = document.getElementById('ncDetailBody');
+  const countEl = document.getElementById('ncDetailCount');
+  if (!tbody) return;
+
+  const sorted = [...hall].sort((a, b) => (b.diasAbierto || 0) - (a.diasAbierto || 0));
+  if (countEl) countEl.textContent = `(${sorted.length} registros)`;
+
+  const diasCls = d => {
+    if (!d || d <= 0) return '';
+    if (d > 60) return 'color:var(--danger);font-weight:600';
+    if (d > 30) return 'color:var(--warn);font-weight:600';
+    return 'color:var(--text)';
+  };
+
+  const fmtDate = s => {
+    if (!s) return '—';
+    const d = parseD(s);
+    return d ? d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: '2-digit' }) : s;
+  };
+
+  tbody.innerHTML = sorted.map(h => {
+    const ncBadge = h.abiertos > 0
+      ? `<span style="color:var(--danger);font-weight:700">${h.abiertos}</span>/<span style="color:var(--text2)">${h.total}</span>`
+      : `<span style="color:var(--accent)">0</span>/<span style="color:var(--text2)">${h.total}</span>`;
+    const diasStyle = diasCls(h.diasAbierto);
+    const comentario = (h.comentarios || '').length > 60
+      ? h.comentarios.slice(0, 60) + '…'
+      : (h.comentarios || '—');
+    return `<tr>
+      <td style="color:var(--accent);font-weight:500">${h.projInstalaciones || '—'}</td>
+      <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis" title="${h.nombreProyecto}">${h.nombreProyecto}</td>
+      <td>${h.supervisor || '—'}</td>
+      <td style="text-align:center">${h.visita || '—'}</td>
+      <td style="text-align:center">${ncBadge}</td>
+      <td style="${diasStyle}">${h.abiertos > 0 ? (h.diasAbierto || 0) + 'd' : '—'}</td>
+      <td>${fmtDate(h.fechaEnvioReporte)}</td>
+      <td>${fmtDate(h.ultimoSeguimiento)}</td>
+      <td>${fmtDate(h.fechaCierre)}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${h.comentarios || ''}">${comentario}</td>
+    </tr>`;
+  }).join('');
+
+  document.querySelectorAll('#ncDetailTable th[data-sort]').forEach(th => {
+    th.onclick = () => {
+      const key = th.dataset.sort;
+      const rows = [...sorted];
+      const cur = th.classList.contains('sorted');
+      const asc = cur ? !th._asc : true;
+      th._asc = asc;
+      document.querySelectorAll('#ncDetailTable th').forEach(t => t.classList.remove('sorted'));
+      th.classList.add('sorted');
+      rows.sort((a, b) => {
+        const va = a[key] ?? '', vb = b[key] ?? '';
+        if (typeof va === 'number') return asc ? va - vb : vb - va;
+        return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+      });
+      tbody.innerHTML = rows.map(h => {
+        const ncBadge = h.abiertos > 0
+          ? `<span style="color:var(--danger);font-weight:700">${h.abiertos}</span>/<span style="color:var(--text2)">${h.total}</span>`
+          : `<span style="color:var(--accent)">0</span>/<span style="color:var(--text2)">${h.total}</span>`;
+        const diasStyle = diasCls(h.diasAbierto);
+        const comentario = (h.comentarios || '').length > 60 ? h.comentarios.slice(0, 60) + '…' : (h.comentarios || '—');
+        return `<tr>
+          <td style="color:var(--accent);font-weight:500">${h.projInstalaciones || '—'}</td>
+          <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis" title="${h.nombreProyecto}">${h.nombreProyecto}</td>
+          <td>${h.supervisor || '—'}</td>
+          <td style="text-align:center">${h.visita || '—'}</td>
+          <td style="text-align:center">${ncBadge}</td>
+          <td style="${diasStyle}">${h.abiertos > 0 ? (h.diasAbierto || 0) + 'd' : '—'}</td>
+          <td>${fmtDate(h.fechaEnvioReporte)}</td>
+          <td>${fmtDate(h.ultimoSeguimiento)}</td>
+          <td>${fmtDate(h.fechaCierre)}</td>
+          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${h.comentarios || ''}">${comentario}</td>
+        </tr>`;
+      }).join('');
+    };
   });
 }
 

@@ -1,0 +1,129 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1152,
+        2080
+      ],
+      "id": "d3d7ea10-3483-4408-adab-788abe59e058",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "path": "enlight-mantenimiento",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -112,
+        2080
+      ],
+      "id": "9a247414-5fe2-4a83-9b24-a0d6a5a64033",
+      "name": "Webhook - GET Mantenimiento",
+      "webhookId": "0e29c5df-13b2-4e96-9b79-1eea862d66c7"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1pz5CDIAX-IUcWNxfIq9E71yQMm6fy7-bGAkl-n8OwOw",
+          "mode": "list",
+          "cachedResultName": "Programación mantenimientos 2026",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1pz5CDIAX-IUcWNxfIq9E71yQMm6fy7-bGAkl-n8OwOw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1974859827,
+          "mode": "list",
+          "cachedResultName": "Programación preventiva 2026",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1pz5CDIAX-IUcWNxfIq9E71yQMm6fy7-bGAkl-n8OwOw/edit#gid=1974859827"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange",
+              "headerRow": 3,
+              "firstDataRow": 4
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        112,
+        2080
+      ],
+      "id": "9a0f2cfc-2c1b-4de0-9f48-52bf4420199b",
+      "name": "Mantenimiento - Programación preventiva 2026",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "af48hEP1PbQpWRo9",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate all items into a single flat array so the webhook returns a JSON array\nconst all = $input.all().map(item => item.json);\nreturn [{ json: all }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        2080
+      ],
+      "id": "b1c4d823-e2a3-4f99-a8d6-0b7e1c345678",
+      "name": "Aggregate to Array"
+    }
+  ],
+  "connections": {
+    "Webhook - GET Mantenimiento": {
+      "main": [
+        [
+          {
+            "node": "Mantenimiento - Programación preventiva 2026",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mantenimiento - Programación preventiva 2026": {
+      "main": [
+        [
+          {
+            "node": "Aggregate to Array",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate to Array": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d07ceca5e978fedf0de8319073f060d445fc5f9ac86873adfc6d77f9052a35c4"
+  }
+}
