@@ -1976,8 +1976,8 @@ function parseCalidadPayload(raw) {
     } else if ('Aprobación de calidad' in r || 'Sitio' in r) {
       // Extract all "Minuta [date]" columns — any format
       const minutaHistory = Object.entries(r)
-        .map(([k, v]) => ({ date: parseMinutaKey(k), note: (v || '').trim() }))
-        .filter(m => m.date !== null)
+        .filter(([k]) => parseMinutaKey(k) !== null)
+        .map(([k, v]) => ({ date: parseMinutaKey(k), note: String(v == null ? '' : v).trim() }))
         .sort((a, b) => b.date - a.date);
       const lastActive = minutaHistory.find(m => m.note !== '');
       const lastMinutaDate = lastActive ? lastActive.date : null;
