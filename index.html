@@ -776,6 +776,7 @@ footer {
           <table class="pipeline" id="mantTable">
             <thead><tr>
               <th data-sort="nombreSitio">Sitio</th>
+              <th data-sort="cliente">Cliente</th>
               <th data-sort="zona">Zona</th>
               <th data-sort="supervisor">Supervisor</th>
               <th data-sort="capacidadKWp">kWp</th>
@@ -1825,6 +1826,7 @@ function parseCalidadPayload(raw) {
         finGarantia: r['Fecha de término de garantía'] || '',
         frecuenciaCalib: r['Frecuencia de calibración'] || '',
         proximoMant: r['Fecha proxima de mantenimiento o calibración'] || '',
+        linkFactura: r['Enlace a Factura'] || '',
       });
     } else if ('Número de hallazgos totales' in r) {
       const t = parseInt(r['Número de hallazgos totales']) || 0;
@@ -1842,12 +1844,15 @@ function parseCalidadPayload(raw) {
         fechaEnvioReporte: r['Fecha de envio reporte'] || '',
         fechaCierre: r['Fecha de cierre'] || '',
         ultimoSeguimiento: r['Fecha de último seguimiento'] || '',
+        ultimaRespuestaInstalaciones: r['Fecha de última respuesta instalaciones'] || '',
+        linkReporte: r['Link de carpeta de reporte NC'] || '',
         año: r['Año'] || '',
         comentarios: r['Comentarios'] || '',
       });
     } else if ('Tipo de visita' in r) {
       cal.push({
         proyecto: r['Proyecto'] || '',
+        tipo: r['Tipo'] || '',
         projInstalaciones: r['PROJ Instalaciones'] || '',
         projOM: r['PROJ O&M'] || '',
         integrante: (r['Integrante '] || r['Integrante'] || '').trim(),
@@ -1856,6 +1861,8 @@ function parseCalidadPayload(raw) {
         tipoVisita: r['Tipo de visita'] || '',
         estatusVisita: r['Estatus de visita'] || '',
         reserva: r['Reserva'] || '',
+        reporteGenerado: r['Reporte generado por Rubén'] || '',
+        reporteAprobado: r['Reporte aprobado por Omar/Esaú'] || '',
         fechaEnvioReporte: r['Fecha de envío de reporte'] || r['Fecha de envio de reporte'] || '',
         estatusAceptacion: r['Estatus de aceptación'] || r['Estatus de aceptacion'] || '',
         comentarios: r['Comentarios'] || '',
@@ -1866,16 +1873,28 @@ function parseCalidadPayload(raw) {
         proyecto: r['Proyecto'] || '',
         cuenta: r['Cuenta'] || '',
         pm: r['PM'] || '',
+        kam: r['KAM'] || '',
         supervisor: r['Supervisor'] || '',
         tipoProyecto: r['Tipo Proyecto'] || '',
         tipoInstalacion: r['Tipo Instalación'] || '',
+        tipoProveeduria: r['Tipo de proveeduría'] || '',
+        tipoSuministrador: r['Tipo de Suministrador'] || '',
+        servicioInstalacion: r['Servicio Instalación SFV'] || '',
         commissioning: r['Commissioning/Encendido Net Zero'] || '',
         visitaCalidad: r['Visita calidad a sitio'] || '',
         estatusCalidad: r['Estatus ante calidad'] || '',
+        preComm: r['¿Se entregó check list de Pre-commissioning?'] || '',
+        comentarios: r['Comentarios'] || '',
+        comentarioController: r['comentario Controller'] || '',
+        responsable: r['Persona a la que se le cargará el presupuesto'] || '',
+        avion: parseFloat(r['Avion']) || 0,
+        rentaCarro: parseFloat(r['Renta de Carro']) || 0,
+        hospedaje: parseFloat(r['Hospedaje']) || 0,
+        totalComida: parseFloat(r['Total comida']) || 0,
+        casetas: parseFloat(r['Casetas']) || 0,
+        gasolina: parseFloat(r['Gasolina']) || 0,
         totalMendel: parseFloat(r['Total a cargar en la Mendel']) || 0,
         totalViaticos: parseFloat(r['Total viaticos\n(Comida - Caseta - Gasolina)']) || 0,
-        avion: parseFloat(r['Avion']) || 0,
-        responsable: r['Persona a la que se le cargará el presupuesto'] || '',
       });
     } else if ('Aprobación de calidad' in r || 'Sitio' in r) {
       lib.push({
@@ -1888,6 +1907,7 @@ function parseCalidadPayload(raw) {
         aprobPSMs: r['Aprobación de Coordinación de PSMs'] || '',
         conPoliza: r['Con póliza de servicios'] || '',
         observaciones: r['Observaciones'] || '',
+        cadenaCorreos: r['Cadena de correos'] || '',
         actualizacion: r['Actualización despues de la sesión'] || '',
         aceptadoScoop: ((r['Aceptado en scoop '] || r['Aceptado en scoop'] || '')).trim(),
       });
@@ -1919,6 +1939,56 @@ async function fetchCalidad() {
   }
 }
 
+// ─── PARSE MANTENIMIENTO PAYLOAD ────────────────────────────────
+// Columnas reales de "Programación preventiva 2026" (headerRow: 3)
+function parseMantPayload(raw) {
+  let arr;
+  if (Array.isArray(raw)) {
+    arr = raw;
+  } else if (raw && typeof raw === 'object') {
+    if (Array.isArray(raw.data)) arr = raw.data;
+    else if (Array.isArray(raw.items)) arr = raw.items;
+    // ya viene como { mantenimientos: [...] } (mock fallback) — usarlo directo
+    else if (Array.isArray(raw.mantenimientos)) return raw;
+    else arr = Object.values(raw).filter(v => v && typeof v === 'object');
+  } else {
+    arr = [];
+  }
+
+  const mantenimientos = arr.map(r => ({
+    nombreSitio:            r['Nombre de sitio'] || '',
+    cliente:                r['Cliente'] || '',
+    projInstalaciones:      parseInt(r['PROJ Instalaciones']) || null,
+    projOM:                 parseInt(r['PROJ\nO&M'] || r['PROJ O&M']) || null,
+    capacidadKWp:           parseFloat(r['Capacidad fotovoltaica instalada (kWp)']) || 0,
+    capacidadBESS:          parseFloat(r['Capacidad BESS instalada (kW)']) || 0,
+    zona:                   r['Zona'] || '',
+    supervisor:             r['Supervisor'] || '',
+    fechaPuestaMarcha:      r['Fecha de puesta en marcha'] || r['Fecha de puesta en marcha '] || '',
+    estatusProyecto:        r['Estatus de proyecto'] || '',
+    estatusPase:            r['Estatus de pase de cuenta'] || '',
+    estatusPoliza:          r['Estatus de la poliza'] || r['Estatus de la póliza'] || '',
+    costoProveedor:         parseFloat(r['Costo de proveedor por kWh']) || 0,
+    fechaPaseCuenta:        r['Fecha de pase de cuenta'] || '',
+    tiempoPaseCuenta:       r['Tiempo de pase de cuenta'] || '',
+    inicioPoliza:           r['Inicio de poliza'] || r['Inicio de póliza'] || '',
+    finPoliza:              r['Fin de Poliza'] || r['Fin de Póliza'] || r['Fin de poliza'] || '',
+    duracionPolizaAnios:    parseFloat(r['Duración de la poliza en años']) || 0,
+    mesProgr:               r['Mes programado del servicio'] || '',
+    fechaProgramada:        r['Fecha de programación de ejecición'] || r['Fecha de programación de ejecución'] || '',
+    fechaRealInicio:        r['Fecha real de inicio de ejecución'] || r['Fecha real de inicio de ejecución '] || null,
+    fechaRealFin:           r['Fecha real de fin de ejecución'] || r['Fecha real de fin de ejecución '] || null,
+    duracion:               parseFloat(r['Duración del Mantenimiento']) || 0,
+    fechaEntregaReporte:    r['Fecha de entrega de reporte'] || null,
+    tiempoEntregaReporte:   r['Tiempo de entrega de reporte'] || '',
+    comentariosQ1:          r['Comentarios Q1 2026'] || '',
+    ejecutadoMes:           r['Se ejecuto en el mes programado'] || '',
+    ejecutadoFecha:         r['Se ejecuto en la fecha programada'] || '',
+  })).filter(m => m.nombreSitio || m.projInstalaciones);
+
+  return { mantenimientos };
+}
+
 // ─── FETCH MANTENIMIENTOS ────────────────────────────────────────
 async function fetchMantenimientos() {
   document.getElementById('loadingMant').style.display = 'flex';
@@ -1932,7 +2002,7 @@ async function fetchMantenimientos() {
     } catch (_) {
       data = MOCK_MANT;
     }
-    rawMant = data;
+    rawMant = parseMantPayload(data);
     document.getElementById('loadingMant').style.display = 'none';
     document.getElementById('mainMant').style.display = 'block';
     buildMantFilters();
@@ -2606,6 +2676,7 @@ function renderMantTable() {
       : (r.fechaRealFin ? '<span class="badge badge-red">Pendiente</span>' : '—');
     return `<tr>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${r.nombreSitio}">${r.nombreSitio}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis" title="${r.cliente}">${r.cliente || '—'}</td>
       <td>${r.zona || '—'}</td>
       <td>${r.supervisor || '—'}</td>
       <td style="color:var(--info)">${r.capacidadKWp ? r.capacidadKWp.toFixed(1) : '—'}</td>
