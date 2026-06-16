@@ -1846,6 +1846,16 @@ let rawMant = null;
 let calidadData = [];
 let mantData = [];
 let calidadSortState = { col: 'diasAbierto', asc: false };
+let calidadStageFilter = null;
+
+function setStageFilter(stage) {
+  calidadStageFilter = (calidadStageFilter === stage) ? null : stage;
+  renderProcessPipeline();
+  renderCalidadTable();
+  if (calidadStageFilter) {
+    document.getElementById('calidadTable')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
 let mantSortState = { col: 'fechaProgramada', asc: true };
 let chartCalidad = null;
 let chartPolizas = null;
@@ -2214,6 +2224,7 @@ function applyCalidadFilters() {
 }
 
 function clearCalidadFilters() {
+  calidadStageFilter = null;
   ['cPM','cSupervisor','cEstatus'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   applyCalidadFilters();
 }
@@ -2248,10 +2259,18 @@ function renderProcessPipeline() {
       const n = counts[key] || 0;
       const pct = total > 0 ? Math.round(n / total * 100) : 0;
       const isComplete = key === 'complete';
-      return `<div class="stage-chip${isComplete ? ' stage-complete' : n === 0 ? ' stage-zero' : ''}">
+      const isActive = calidadStageFilter === key;
+      const cls = [
+        'stage-chip',
+        isComplete ? 'stage-complete' : '',
+        n === 0 ? 'stage-zero' : '',
+        isActive ? 'stage-active' : '',
+      ].filter(Boolean).join(' ');
+      const border = isActive ? `border:2px solid ${meta.color};` : '';
+      return `<div class="${cls}" style="cursor:pointer;${border}" onclick="setStageFilter('${key}')" title="${isActive ? 'Clic para quitar filtro' : 'Clic para filtrar tabla'}">
         <div class="stage-chip-count" style="color:${meta.color}">${n}</div>
         <div class="stage-chip-label">${meta.label}</div>
-        <div class="stage-chip-pct">${pct}%</div>
+        <div class="stage-chip-pct">${isActive ? '✕ filtro activo' : pct + '%'}</div>
       </div>`;
     }).join('<div class="stage-arrow">›</div>');
 }
@@ -2617,9 +2636,13 @@ function renderNCDetail() {
 
 function renderCalidadTable() {
   const tbody = document.getElementById('calidadBody');
-  document.getElementById('calidadCount').textContent = `(${calidadData.length} proyectos)`;
-
-  let rows = [...calidadData];
+  let rows = calidadStageFilter
+    ? calidadData.filter(r => r.stage === calidadStageFilter)
+    : [...calidadData];
+  const stageMeta = calidadStageFilter ? STAGE_META[calidadStageFilter] : null;
+  document.getElementById('calidadCount').textContent = calidadStageFilter
+    ? `(${rows.length} proyectos — ${stageMeta?.label || calidadStageFilter})`
+    : `(${calidadData.length} proyectos)`;
   const { col, asc } = calidadSortState;
   rows.sort((a, b) => {
     let va = a[col] ?? '', vb = b[col] ?? '';

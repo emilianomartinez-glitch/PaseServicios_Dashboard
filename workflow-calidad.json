@@ -196,7 +196,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Aggregate all items into a single flat array so the webhook returns JSON array\nconst all = $input.all().map(item => item.json);\nreturn [{ json: all }];"
+        "jsCode": "// Wrap all items into { data: [...] } — n8n requires json to be an object, not an array\nconst all = $input.all().map(item => item.json);\nreturn [{ json: { data: all } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
